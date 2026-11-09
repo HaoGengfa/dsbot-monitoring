@@ -1002,14 +1002,15 @@ export function apply(ctx) {
     return () => clearTimeout(timer);
   }, 'dsbot-monitoring: warmup');
 
-  // 四个路由：三个接口 + 一个静态前缀
-  const routes = [
-    { kind: 'exact', path: `${MOUNT}/api/live`, handler: handle },
-    { kind: 'exact', path: `${MOUNT}/api/replay`, handler: handle },
-    { kind: 'exact', path: `${MOUNT}/api/tasks/confirm`, handler: handle },
-    { kind: 'prefix', path: MOUNT, handler: handle }
-  ];
-  for (const route of routes) {
-    ctx.effect(() => ctx.webServer.register(route), `dsbot-monitoring: ${route.path}`);
-  }
+  // 只注册一条前缀路由，整棵 /bot-stage 子树都由 handle 分派。
+  //
+  // 为什么不额外注册三个 exact（api/live、api/replay、api/tasks/confirm）：
+  // webServer 的匹配是「先查 exact，未命中再按最长前缀匹配」，而 prefix 已经
+  // 覆盖了这三个路径。多注册 exact 不会让请求更快，只会让它们变成永远不会
+  // 单独生效的死配置——将来有人改了 handle 里的分派却忘了同步 exact，
+  // 就会出现「改了却不生效」而且不报错。一条路由，一处真相。
+  ctx.effect(
+    () => ctx.webServer.register({ kind: 'prefix', path: MOUNT, handler: handle }),
+    `dsbot-monitoring: ${MOUNT}`
+  );
 }
