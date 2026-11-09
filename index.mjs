@@ -978,6 +978,20 @@ async function handle(req, res) {
   serveStatic(res, pathname);
 }
 
+// 预热用量统计：启动后把每个成员的会话日志扫一遍，
+// 避免第一次打开看板时因为要现算而卡住。
+// （原来漏了这个函数，启动 200ms 后定时器一触发就抛 ReferenceError，
+//   dsh 会把它当未捕获异常直接退出——这就是之前启动不起来的真正原因。）
+async function warmStats() {
+  const state = await readJson(STATE_FILE);
+  const bots = Object.values((state && state.bots) || {});
+  for (const bot of bots) {
+    const file = sessionFileOf(bot.sessionId || bot.id);
+    if (file) await scanSessionStats(file);
+  }
+  return bots.length;
+}
+
 // ── cordis 插件出口 ──────────────────────────────────────────
 export const name = 'dsbot-monitoring';
 export const inject = ['webServer'];
