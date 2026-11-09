@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+
+# 运行时状态：记住用户点过哪些任务，属于本机数据，不进仓库
+data/task-confirm.json

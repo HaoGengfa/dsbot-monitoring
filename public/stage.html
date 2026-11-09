@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bot 团队作战室</title>
+  <link rel="stylesheet" href="./stage.css" />
+</head>
+<body>
+  <div class="left-col">
+    <section class="zone-row">
+      <div class="zone zone-topo" id="zone-topo">
+        <div id="member-list" class="mlist"></div>
+        <svg id="topo-ring" class="tring" aria-hidden="true"></svg>
+      </div>
+      <!-- 中列：只放活跃度，让它能撑满整列高度（原来还塞着任务流转，曲线只能卡在 168px） -->
+      <div class="side-col">
+        <div class="zone zone-activity">
+          <div class="side-head" data-accent="activity"><span class="side-name">活跃度</span><span class="side-sub">近 60 分钟</span><span class="side-tail" id="act-now-text"></span></div>
+          <div class="activity-wrap"><svg id="activity" class="activity" aria-hidden="true"></svg></div>
+        </div>
+      </div>
+      <!-- 右列：任务流转 + 日志流上下组合——两者都是「消息从谁到谁」的流水，放一起读得通 -->
+      <div class="right-stack">
+        <div class="zone zone-taskflow">
+          <div class="side-head" data-accent="task"><span class="side-name">任务流转</span><span class="side-sub" id="taskflow-sub"></span></div>
+          <div id="taskflow" class="taskflow"></div>
+        </div>
+        <div class="zone zone-log">
+          <div class="side-head" data-accent="log"><span class="side-name">日志流</span><span class="side-tail" id="log-tail"></span></div>
+          <ol id="log" class="log"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="zone zone-mid">
+      <div class="side-head" data-accent="think"><span class="side-name">成员思考</span><span class="side-sub" id="think-sub"></span><span class="think-lights" id="think-lights" aria-hidden="true"></span></div>
+      <div id="thoughts" class="thoughts"></div>
+    </section>
+  </div>
+
+  <aside class="stat-col">
+    <!-- 需要你处理：全屏唯一的行动项，放右栏最上，一眼就能看到有没有事要管 -->
+    <div class="zone zone-alerts">
+      <div class="side-head" data-accent="alert"><span class="side-name">需要你处理</span><span class="side-sub" id="alerts-sub"></span></div>
+      <div id="alerts" class="alerts"></div>
+    </div>
+
+    <!-- ② 产出：合计 / 排行 / 画像三块同源于 bots[].stats，合成一个模块，
+         只留一个总标题，内部三个小节——原来各带一个表头，等于把一份数据说了三遍 -->
+    <div class="zone zone-output">
+      <div class="side-head" data-accent="neutral"><span class="side-name">产出</span><span class="side-sub" id="ms-sub">实时</span></div>
+
+      <div class="out-sec">
+        <div class="out-sub">全队合计 <span id="totals-sub">输出 token</span></div>
+        <div id="totals" class="totals"></div>
+      </div>
+
+      <div class="out-sec">
+        <div class="out-sub">成员排行 <span>按输出 token</span></div>
+        <div id="mstat" class="mstat"></div>
+        <div id="stats" class="stats"></div>
+      </div>
+
+      <div class="out-sec">
+        <div class="out-sub">工具画像 <span>全队累计 · 按调用次数</span></div>
+        <div class="pf-legend">
+          <span><i style="background:#6ea8fe"></i>读文件</span>
+          <span><i style="background:#3ddc97"></i>执行</span>
+          <span><i style="background:#ffb547"></i>写改</span>
+          <span><i style="background:#a78bfa"></i>搜索</span>
+          <span><i style="background:#64748b"></i>其他</span>
+        </div>
+        <div id="profile" class="profile"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 右侧中部：设置入口。点开是从右边滑出的抽屉，暂时只有"日志来源"一项 -->
+  <button id="settings-btn" class="settings-btn" type="button" title="设置" aria-label="打开设置">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/>
+      <path fill="currentColor" d="M19.4 13a7.9 7.9 0 0 0 0-2l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3.4H11l-.3 2.6a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.9 7.9 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.3 2.6h4l.3-2.6a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6Z"/>
+    </svg>
+  </button>
+
+  <div id="settings-mask" class="settings-mask" hidden></div>
+  <aside id="settings-drawer" class="settings-drawer" aria-hidden="true">
+    <div class="settings-head">
+      <span class="settings-title">设置</span>
+      <button id="settings-close" class="settings-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-sec">
+        <div class="settings-label">信息密度</div>
+        <div id="density-list" class="settings-options">
+          <button type="button" class="settings-opt" data-value="compact">紧凑（一屏看全）</button>
+          <button type="button" class="settings-opt" data-value="comfort">舒展（整页滚动）</button>
+        </div>
+        <div class="settings-hint">紧凑把全部内容塞进一屏，卡片正文要滚才能看全；舒展放开高度，页面整体滚动，每张卡能读更多行。</div>
+      </div>
+
+      <div class="settings-sec">
+        <div class="settings-label">日志来源</div>
+        <div id="log-source-list" class="settings-options"></div>
+        <div class="settings-hint">选某个群时，整个看板都会切到那个群的成员。</div>
+      </div>
+    </div>
+  </aside>
+
+  <script type="module" src="./stage.js"></script>
+</body>
+</html>

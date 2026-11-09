@@ -1,0 +1,97 @@
+/* 回放页专用：顶部阶段条与底部控制条 */
+.phases {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 20px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 15, 24, 0.7);
+  flex: 0 0 auto;
+  overflow-x: auto;
+}
+
+.phases span {
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  white-space: nowrap;
+  transition: all 260ms ease;
+}
+
+.phases span::after {
+  content: '→';
+  margin-left: 8px;
+  color: #2b3d5c;
+}
+
+.phases span:last-child::after { content: ''; margin: 0; }
+
+.phases span.active {
+  color: var(--ink);
+  border-color: rgba(61, 220, 151, 0.55);
+  background: rgba(61, 220, 151, 0.1);
+  box-shadow: 0 0 18px -8px var(--reply);
+}
+
+.replay-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 12, 20, 0.92);
+  flex: 0 0 auto;
+  z-index: 40;
+}
+
+.replay-bar .pb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(20, 28, 44, 0.9);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.replay-bar .pb:hover { border-color: rgba(61, 220, 151, 0.5); }
+
+#scrub {
+  flex: 1 1 auto;
+  min-width: 120px;
+  accent-color: #3ddc97;
+  cursor: pointer;
+}
+
+.replay-bar .stamp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+  min-width: 76px;
+  text-align: right;
+}
+
+.replay-bar .ctrl {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.replay-bar select {
+  background: rgba(16, 23, 36, 0.95);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+/* 回放时卡片不需要入场位移 */
+.card { animation: none; }

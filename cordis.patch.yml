@@ -1,0 +1,5 @@
+# dsbot-monitoring bundle：向组合挂 Node half（数据服务）与 client half（侧栏面板）。
+# 两半共用一个 id，DSH 侧按 id 把 client half 挂到同一插件实例上。
+- insert:
+    - id: dsbot-monitoring
+      name: 'dsbot-monitoring'

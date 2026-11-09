@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>复盘回放 · Bot 协作过程</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./replay.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>复盘回放</h1>
+      <span class="sub" id="window-label">加载中…</span>
+    </div>
+    <div class="stats">
+      <span class="stat"><b id="clock">--:--</b> 时刻</span>
+      <span class="stat"><b id="stat-working">0</b> 干活中</span>
+      <span class="stat"><b id="stat-events">0</b> 事件</span>
+      <a class="nav-link" href="./index.html">← 实时看板</a>
+      <span id="conn" class="conn">读取中…</span>
+    </div>
+  </header>
+
+  <nav class="phases" id="phases">
+    <span data-bot="需求分析师">需求梳理</span>
+    <span data-bot="前端工程师">前端开发</span>
+    <span data-bot="接口集成工程师">接口联调</span>
+    <span data-bot="代码评审工程师">代码审查</span>
+    <span data-bot="测试工程师">功能测试</span>
+  </nav>
+
+  <main id="stage" class="stage">
+    <svg id="edges" class="edges" aria-hidden="true"></svg>
+    <div id="cards" class="cards"></div>
+    <svg id="fx" class="fx" aria-hidden="true"></svg>
+  </main>
+
+  <footer class="replay-bar">
+    <button id="play" class="pb" type="button" aria-label="播放/暂停">▶</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="进度" />
+    <span id="stamp" class="stamp">--:--:--</span>
+    <label class="ctrl">速度
+      <select id="speed">
+        <option value="10">10×</option>
+        <option value="30">30×</option>
+        <option value="60" selected>60×</option>
+        <option value="120">120×</option>
+        <option value="300">300×</option>
+      </select>
+    </label>
+    <label class="ctrl">区间
+      <select id="window">
+        <option value="chain" selected>昨天 13:50–16:50（前端交付链路）</option>
+        <option value="allday">昨天 09:00–18:00（全天）</option>
+        <option value="today">今天 00:00–现在</option>
+      </select>
+    </label>
+  </footer>
+
+  <script type="module" src="./replay.js"></script>
+</body>
+</html>

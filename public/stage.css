@@ -1,0 +1,5286 @@
+:root {
+  --bg: #0c1017;
+  --grid-line: rgba(255, 255, 255, 0.025);
+  --grid-size: 32px;
+  --line: #1b2537;
+  --ink: #e6edf9;
+  --ink-2: #9aabc6;
+  --ink-3: #8a9cb5;
+  --dispatch: #ffb547;
+  --reply: #3ddc97;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-rows: 29vh minmax(0, 1fr) 118px;
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+
+.zone {
+  position: relative;
+  min-height: 0;
+  border: 1px dashed #23304a;
+  border-radius: 12px;
+  background: rgba(18, 25, 35, 0.72);
+  overflow: hidden;
+}
+
+.zone-tag {
+  position: absolute;
+  right: 10px;
+  top: 7px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #8a9cb5;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* 第一行：左拓扑、右日志 */
+.zone-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+/* ---------- ① 拓扑 ---------- */
+.topo { width: 100%; height: 100%; display: block; }
+
+.topo .edge { fill: none; stroke: #26374f; stroke-width: 1.3; }
+
+.topo .edge-flow {
+  fill: none;
+  stroke: rgba(90, 140, 210, 0.4);
+  stroke-width: 1.1;
+  stroke-dasharray: 3 9;
+  animation: flow 2.6s linear infinite;
+}
+
+@keyframes flow { to { stroke-dashoffset: -48; } }
+
+.topo .node-core { stroke-width: 2; transition: fill-opacity 260ms ease; }
+
+.topo .node-label {
+  fill: var(--ink-2);
+  font-size: 11.5px;
+  text-anchor: middle;
+}
+
+.topo .pulse { fill: none; stroke: #3ddc97; stroke-width: 1.6; opacity: 0; }
+
+@keyframes pulse {
+  0% { r: 24; opacity: 0.7; }
+  100% { r: 42; opacity: 0; }
+}
+
+/* ---------- ② 日志流 ---------- */
+.log {
+  position: absolute;
+  inset: 22px 12px 10px;      /* 顶部留出「② 日志流」标签，避免压住第一行 */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  overflow: hidden;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
+}
+
+.log li {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--ink-3);
+  animation: log-in 320ms ease-out;
+}
+
+.log li .time { color: #8a9cb5; flex: 0 0 62px; }
+.log li .kind { flex: 0 0 32px; }
+.log li .kind.request { color: var(--dispatch); }
+.log li .kind.reply { color: var(--reply); }
+.log li .kind.tool { color: #6ea8fe; }
+.log li .kind.think { color: #8a9ab4; }
+.log li .kind.turn { color: #a78bfa; }
+.log li .kind.stopped { color: #64748b; }
+.log li .text { flex: 1 1 auto; min-width: 0; color: #7f8ea6; overflow: hidden; text-overflow: ellipsis; }
+
+@keyframes log-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- ③ 思考区 ---------- */
+.thoughts {
+  position: absolute;
+  inset: 0;
+  padding: 10px;              /* 标签已去掉，四周等距 */
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.thought {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #2a3a52;
+  border-radius: 8px;
+  background: #18212d;          /* 单色：渐变会让底沿与页面同色，卡片下半截糊成一片 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  animation: card-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: border-color 240ms ease, box-shadow 320ms ease;
+  /* 四角角标参数：默认「贴边粗角标」，2026-11-04 按用户要求加粗加长 */
+  --bracket-len: 20px;
+  --bracket-w: 2.5px;
+  --bracket-c: color-mix(in srgb, var(--tone, #64748b) 88%, #fff);
+}
+
+/* ?card=inset：内缩 6px「取景框」（11px 臂长、1.5px 线、圆角 12px） */
+body.card-inset .thought {
+  border-radius: 12px;
+  --bracket-len: 11px;
+  --bracket-w: 1.5px;
+}
+
+body.card-inset .thought::before {
+  inset: 6px;
+  border-radius: 3px;
+  opacity: 0.55;
+}
+
+body.card-inset .thought.is-working::before {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tone, #64748b) 55%, transparent));
+}
+
+/* ?card=str：粗角标 + 去边框（最强调四角） */
+body.card-str .thought {
+  border-color: transparent;
+  border-radius: 6px;
+  --bracket-len: 24px;
+  --bracket-w: 3px;
+}
+
+body.card-str .thought::before {
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.8;
+}
+
+body.card-str .thought.is-working::before { filter: none; }
+
+/* ?card=off：回到原来的左侧竖色条 */
+body.card-off .thought::before {
+  inset: 0 auto 0 0;
+  width: 3px;
+  background-image: none;
+  background: var(--tone, #64748b);
+  opacity: 1;
+  border-radius: 0;
+}
+
+.thought.span-2 { grid-column: span 2; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 四角直角括号：用 8 层渐变画出 4 个 L 形角标，颜色跟随该成员色
+   长度 --bracket-len、线宽 --bracket-w 可调；角标覆盖在伪元素 sheen 之上 */
+.thought::before {
+  content: '';
+  position: absolute;
+  inset: 0;                   /* 贴卡片边缘 */
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c)),
+    linear-gradient(var(--bracket-c), var(--bracket-c));
+  background-repeat: no-repeat;
+  background-position:
+    left top, left top,
+    right top, right top,
+    left bottom, left bottom,
+    right bottom, right bottom;
+  background-size:
+    var(--bracket-len) var(--bracket-w), var(--bracket-w) var(--bracket-len),
+    var(--bracket-len) var(--bracket-w), var(--bracket-w) var(--bracket-len),
+    var(--bracket-len) var(--bracket-w), var(--bracket-w) var(--bracket-len),
+    var(--bracket-len) var(--bracket-w), var(--bracket-w) var(--bracket-len);
+  opacity: 0.72;
+  transition: opacity 260ms ease, filter 260ms ease;
+}
+
+/* 干活：四角角标隐身，把边让给绕边流光，避免「贴边线 + 边框线」双线打架 */
+.thought.is-working::before { opacity: 0; }
+
+/* 绕边流光：SVG 描边虚线绕卡片一圈（conic-gradient 在宽卡上角度被拉扁，看不出跑动）
+   pathLength=100 + non-scaling-stroke：dash 长度按周长百分比算，线宽不随缩放变形 */
+.thought-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.thought.is-working .thought-ring { opacity: 1; }
+
+.thought-ring path {
+  fill: none;
+}
+
+/* 底圈：整圈淡色，让「在跑」有底色可依 */
+.thought-ring .ring-base {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1.2;
+}
+
+/* 光带：16% 周长的亮段，绕一圈 3.4s */
+.thought-ring .ring-spark {
+  stroke: #ffffff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 1.1 98.9;   /* 光头：1.1% 周长，短而亮 */
+  animation: ring-run 3.6s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 16px rgba(180, 214, 255, 0.5));
+}
+
+/* 空闲卡不带光带跑动，省掉 10 个无用的循环动画 */
+.thought:not(.is-working) .ring-spark { animation: none; }
+
+@keyframes ring-run {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thought-ring .ring-spark { animation: none; stroke-dasharray: none; opacity: 0.75; }
+}
+
+
+/* 干活态：唯一主信号是边框呼吸，2.8s 单节奏（原 2.2s 低于红线、且与扫光/脉冲三种节奏打架） */
+.thought.is-working {
+  border-color: transparent;    /* 边框让位：流光替代静态边框，避免两线并行 */
+  animation: think-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1.2);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.55),
+    0 0 12px -4px color-mix(in srgb, var(--tone) 45%, transparent);
+}
+
+@keyframes think-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--tone) 14%, transparent),
+      0 8px 18px -18px color-mix(in srgb, var(--tone) 60%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--tone) 42%, transparent),
+      0 8px 22px -14px color-mix(in srgb, var(--tone) 78%, transparent);
+  }
+}
+
+@keyframes think-pop {
+  0% { transform: scale(0.985); }
+  60% { transform: scale(1.012); }
+  100% { transform: scale(1); }
+}
+
+/* 空闲卡：四角角标一律中性灰，不再各显各的成员色。
+   11 张卡同屏时，如果每张都带自己的颜色，画面第一眼是"好多颜色"，
+   而不是"谁在干活"——成员色是稀缺资源，只留给正在跑的那张。 */
+.thought:not(.is-working) {
+  --bracket-c: #3a4c66;
+  filter: saturate(0.85) brightness(0.92);
+}
+.thought:not(.is-working) .thought-body { opacity: 0.86; }
+
+.thought-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px 7px 14px;
+  border-bottom: 1px solid rgba(27, 37, 55, 0.9);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+/* 成员色只在左侧竖条出现一次；卡内不再放色点 */
+.head-dot { display: none; }
+
+.thought.is-working .head-dot {
+  animation: none;                        /* 与边框呼吸重复，删掉脉冲 */
+  box-shadow: 0 0 8px var(--tone, #64748b);
+}
+
+@keyframes dot-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone) 60%, transparent), 0 0 8px var(--tone); }
+  70% { box-shadow: 0 0 0 7px transparent, 0 0 8px var(--tone); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 8px var(--tone); }
+}
+
+.thought-head .title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.thought-head .role {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(52, 72, 104, 0.9);
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a9c4;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.thought-head .status {
+  margin-left: auto;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 240ms ease;
+}
+
+.thought.is-working .status {
+  color: var(--reply);
+  border-color: rgba(61, 220, 151, 0.5);
+  background: rgba(61, 220, 151, 0.08);
+}
+
+.think-dots { display: none; align-items: flex-end; gap: 2px; height: 8px; }
+.thought.is-working .think-dots { display: inline-flex; }
+
+.think-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: none;              /* 常驻跳动属噪音，改为静态点 */
+  opacity: 0.85;
+}
+
+.think-dots i:nth-child(2) { animation-delay: 0.28s; }
+.think-dots i:nth-child(3) { animation-delay: 0.56s; }
+
+@keyframes dot-bounce {
+  0%, 70%, 100% { transform: translateY(0); opacity: 0.4; }
+  20% { transform: translateY(-3px); opacity: 1; }
+}
+
+.thought-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 0;
+  font-size: 9.5px;
+  color: var(--ink-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.thought-meta > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thought-meta .thought-time { flex: 0 0 auto; margin-left: 8px; color: #8a9cb5; }
+
+.thought-body {
+  flex: 1 1 auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 9px);
+  min-height: 0;
+  margin: 7px 12px 9px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  background: rgba(5, 9, 15, 0.88);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.52;
+  color: #a9b8cd;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  position: relative;
+
+}
+
+.thought-body.is-empty::before {
+  content: '暂无思考记录';
+  color: var(--ink-3);
+}
+
+.caret {
+  display: inline-block;
+  width: 5px;
+  height: 10px;
+  margin-left: 1px;
+  vertical-align: -1px;
+  background: var(--tone, #64748b);
+  animation: none;              /* 与三点跳动重复，去掉 1s 闪烁，省一个常驻循环 */
+  opacity: 0.9;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ---------- ④ 统计 ---------- */
+.zone-stats {
+  border-style: solid;
+  border-color: #1e2b40;
+  background: linear-gradient(180deg, rgba(16, 23, 36, 0.96), rgba(9, 13, 21, 0.98));
+  box-shadow: inset 0 1px 0 rgba(120, 160, 220, 0.08);
+}
+
+.stats {
+  position: absolute;
+  inset: 8px 10px 12px;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: stretch;
+}
+
+.stat-cell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 9px 7px 11px;
+  border: 1px solid #1d2839;
+  border-radius: 9px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.008));
+  overflow: hidden;
+}
+
+/* 底部不再使用左侧竖条：竖条只在思考卡出现，避免同色重复 */
+
+
+.sc-top { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+.sc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone, #64748b);
+  flex: 0 0 auto;
+}
+
+.sc-name {
+  font-size: 12px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-sub {
+  font-size: 10.5px;
+  color: #7d8fa8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+
+.sc-main { display: flex; align-items: baseline; gap: 4px; }
+
+.sc-out {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sc-out-label { font-size: 11px; color: var(--ink-3); }
+
+.sc-rows {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #9aabc6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sc-rows b { color: var(--ink); font-weight: 600; }
+
+/* 胶囊节点：与卡片同款圆角，避免圆形与整体风格脱节 */
+.topo .pulse-rect {
+  fill: none;
+  stroke-width: 1.6;
+  opacity: 0;
+}
+
+@keyframes pill-pulse {
+  0% { opacity: 0.75; }
+  100% { opacity: 0; }
+}
+
+.topo .node-pill { transition: fill-opacity 260ms ease, stroke-opacity 260ms ease; }
+.topo .node-label { fill: var(--ink); dominant-baseline: middle; }
+.topo .node-dot { }
+
+/* ---------- 底部：横向条形榜（不设卡片，直接比较） ---------- */
+body { grid-template-rows: 27vh minmax(0, 1fr) 240px; }
+
+.stats {
+  position: absolute;
+  inset: 4px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 20px;
+  min-height: 0;
+}
+
+.bar-name {
+  flex: 0 0 84px;
+  font-size: 11px;
+  color: #9aabc6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: #1d2839;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tone, #64748b);
+  transition: width 480ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.bar-out {
+  flex: 0 0 48px;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.bar-meta {
+  flex: 0 0 176px;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: #6f8199;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 动效规范（设计规范工程师约束） ---------- */
+/* 1. 连线默认静止：只有真的有事件时才流动一次 */
+.topo .edge-flow {
+  animation: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.topo .edge-flow.is-flowing {
+  opacity: 0.5;
+  stroke-dasharray: 2 10;
+  animation: flow 1.5s linear 1;
+}
+
+/* 2. 脉冲放慢到 3.2s、起始透明度降到 0.35、外扩用 transform 做真扩散 */
+.topo .pulse-rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 呼吸必须带缩放：只改透明度是“闪”，加缩放才是“呼吸” */
+@keyframes pill-pulse {
+  0% { opacity: 0.35; transform: scale(1); stroke-width: 1.6; }
+  70% { opacity: 0.1; transform: scale(1.06); stroke-width: 1.2; }
+  100% { opacity: 0; transform: scale(1.08); stroke-width: 1.0; }
+}
+
+/* 3. 减少动效：全部循环动画停下，只保留静态状态差 */
+@media (prefers-reduced-motion: reduce) {
+  .topo .edge-flow,
+  .topo .pulse-rect,
+  .thought.is-working,
+  .thought.is-working::after,
+  .thought.is-working .head-dot,
+  .think-dots i,
+  .caret {
+    animation: none !important;
+  }
+
+  .topo .edge-flow { opacity: 0.18; }
+  .thought { animation: none; }
+
+  /* 用静态描边表示“正在干活”，不靠闪烁 */
+  .thought.is-working {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent);
+  }
+}
+
+/* ---------- 底部：左侧全队合计 + 右侧成员条形榜 ---------- */
+.zone-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 8px 14px;
+}
+
+.totals {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding-right: 14px;
+  border-right: 1px solid #1e2b40;
+}
+
+.tt-title {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #5e6f88;
+}
+
+.tt-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.tt-main b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.tt-main .tt-unit {
+  font-size: 10px;
+  color: #5e6f88;
+  white-space: nowrap;
+}
+
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #6f8199;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.tt-row b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.tt-foot {
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: #8a9cb5;
+}
+
+.stats {
+  position: static;
+  inset: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ---------- 数字滚动（逐位里程表，槽位固定） ---------- */
+.odo {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: flex-start;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  --h: 20px;
+  height: var(--h);
+}
+
+.odo-lg { --h: 30px; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.odo-sm { --h: 20px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+
+.odo-digit,
+.odo-gap {
+  flex: 0 0 auto;
+  display: block;
+  width: 1ch;
+  height: var(--h);
+  overflow: hidden;
+  position: relative;
+}
+
+.odo-gap { visibility: hidden; }
+
+.odo-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform 320ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.odo-strip span {
+  display: block;
+  height: var(--h);
+  line-height: var(--h);
+  text-align: center;
+}
+
+.odo-sep {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  height: var(--h);
+  line-height: var(--h);
+}
+
+.odo-dot { width: 0.5ch; }
+
+.odo-lg .odo-sep { width: 1ch; }
+
+/* ---------- 全队合计：三层结构（英雄数字 / 副标+说明 / 2×2 小指标） ---------- */
+.totals .tt-main {
+  display: flex;
+  align-items: baseline;
+  min-height: 42px;
+}
+
+.odo-xl {
+  --h: 42px;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 42px;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 副标行：说明推到行尾，不单独占一行 */
+.totals .tt-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 15px;
+  color: #9aabc6;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.totals .tt-sub .sep { color: #3f5273; }
+
+.totals .tt-sub .tt-note {
+  margin-left: auto;
+  font-size: 10px;
+  color: #5e6f88;
+}
+
+/* 2×2 小指标：数字在上、标签在下；靠留白分组，不加分隔线 */
+.totals .tt-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 4px 12px;
+  padding-top: 6px;
+  align-content: stretch;
+}
+
+.totals .tt-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.odo-md {
+  --h: 34px;              /* 必须与 line-height 一致：字号涨了但槽高没跟上，下一行数字的顶边会漏出来变成横线 */
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 34px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.totals .tt-cap {
+  font-size: 10px;
+  line-height: 14px;
+  color: #7d8fa8;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.tt-main .odo-lg { margin-right: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .odo-strip { transition: none !important; }
+}
+
+/* ---------- 右侧：活跃度曲线 + 告警 ---------- */
+.zone-row { grid-template-columns: minmax(240px, 28%) minmax(0, 1fr) 360px; }
+
+.zone-side {
+  display: flex;
+  flex-direction: column;
+  padding: 9px 12px 10px;
+  gap: 2px;
+}
+
+.side-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #5e6f88;
+  white-space: nowrap;
+}
+
+.side-title span {
+  margin-left: 6px;
+  letter-spacing: 0;
+  color: #3f5273;
+}
+
+.side-title-2 { margin-top: 8px; }
+
+.activity {
+  width: 100%;
+  height: 92px;
+  flex: 0 0 auto;
+}
+
+.act-area { fill: rgba(61, 220, 151, 0.12); }
+.act-line { fill: none; stroke: rgba(61, 220, 151, 0.85); stroke-width: 1.5; }
+.act-base { stroke: #24344c; stroke-width: 1; }
+.act-grid { stroke: rgba(120, 170, 230, 0.1); stroke-width: 1; stroke-dasharray: 2 6; }
+.act-peak { fill: #3ddc97; }
+.act-text {
+  fill: #5e6f88;
+  font-size: 9.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #9aabc6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #64748b;
+}
+
+.alert.ok .alert-dot { background: #3ddc97; }
+.alert.warn .alert-dot { background: #ffb547; }
+.alert.bad .alert-dot { background: #ef4444; }
+.alert.warn { color: #d9b47a; }
+.alert.bad { color: #e88b8b; }
+
+/* 右侧模块放大：三栏比例与图表尺寸 */
+.zone-row { grid-template-columns: minmax(220px, 25%) minmax(0, 1fr) 470px; }
+
+.zone-side { padding: 9px 14px 12px; gap: 4px; }
+
+.side-head {
+  display: flex;
+  /* 用 center 而不是 baseline：标题是 inline-flex（带前置竖条），
+     它的基线和旁边 10px 的小字对不上，会看起来上下错位。 */
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.side-head-2 { margin-top: 4px; }
+
+.side-name {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #7d8fa8;
+}
+
+.side-sub {
+  font-size: 9.5px;
+  color: #3f5273;
+  letter-spacing: 0;
+}
+
+.activity {
+  width: 100%;
+  height: 104px;
+  flex: 0 0 auto;
+}
+
+.side-stats {
+  display: flex;
+  gap: 18px;
+  margin: 2px 0 4px;
+}
+
+.side-stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.side-stats b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.side-stats span {
+  font-size: 9.5px;
+  color: #5e6f88;
+}
+
+.alerts {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.alert { flex: 0 0 18px; }
+
+/* 按设计规格：24% / 1fr / 420px，图高 148 */
+.zone-row { grid-template-columns: minmax(220px, 22%) minmax(0, 1fr) 40%; }
+.activity { height: 148px; }
+.side-sep { height: 1px; background: #1e2b40; margin: 8px 0 6px; }
+
+.act-halo { fill: rgba(61, 220, 151, 0.18); }
+.act-now {
+  fill: #3ddc97;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.act-peak-label {
+  fill: #c7d4e6;
+  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.act-axis { fill: #7d8fa8; font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.act-avg { fill: #9aabc6; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* 对照版：?swap=1 时把活跃度图放中间、日志放右侧 */
+body.swap .zone-row { grid-template-columns: minmax(220px, 22%) 40% minmax(0, 1fr); }
+body.swap .zone-topo { order: 1; }
+body.swap .zone-side { order: 2; }
+body.swap .zone-log { order: 3; }
+body.swap .zone-side { padding: 9px 16px 12px; }
+
+
+
+/* ---------- 背景：静态底图（2026-11-06 替换原来的三层渐变） ----------
+   原来是「右上冷蓝光晕 + 左下绿光晕 + 四周暗角」三层 CSS 渐变实时合成，
+   每帧都要重算，而且大屏缩放时渐变的像素半径不跟着变，观感会飘。
+   现在改成一张 3840×2160 的静态底图（图片生成出的那版）：
+   - 四边像素严格等于底色 #0c1017，所以 cover 拉伸、窗口任意比例都不会露接缝或暗框
+   - 亮度上限 38/255，中位数 17，压得住上面 12 张卡片，不抢主体
+   - 网格线仍由下面的 body::after 画，保持锐利，不烤进图片里
+   底图加载失败时回落到原来的渐变，页面不会变纯黑。 */
+/* 背景回到"深蓝渐变 + 网格"这套原方案（2026-11-06 用户要求退回）。
+   之前铺过一张 bg-stage.png 静态底图，观感偏灰、还要吃 1MB 加载，
+   现在移除，回到纯 CSS 渐变：右上冷蓝光晕 + 左下青绿光晕 + 四周暗角。 */
+body {
+  background-color: var(--bg);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* 渐变版只作为底图加载失败时的兜底，正常情况被底图完全盖住 */
+  /* 底图铺在 body 上；这层渐变只在底图没能加载时才有意义。
+     html.bg-fallback 由 JS 在底图 onerror 时挂上（见 stage.js 末尾），
+     正常情况这层保持透明，不叠加两层光晕。 */
+  background:
+    radial-gradient(880px 620px at 84% 0%, rgba(90, 140, 210, 0.075) 0%, transparent 62%),
+    radial-gradient(760px 560px at 6% 98%, rgba(61, 220, 151, 0.05) 0%, transparent 58%),
+    radial-gradient(140% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.42) 100%);
+  opacity: 1;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  -webkit-mask-image: radial-gradient(140% 120% at 50% 45%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(140% 120% at 50% 45%, #000 30%, transparent 78%);
+}
+
+/* 内容必须压在两个伪元素之上 */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after { animation: none !important; transition: none !important; }
+}
+
+/* 蓝色背景试验：?bg=blue（深蓝）/ ?bg=navy（更饱和） */
+body.bg-blue {
+  --bg: #0a1526;
+  --grid-line: rgba(120, 180, 255, 0.035);
+}
+
+body.bg-blue::before {
+  background:
+    radial-gradient(900px 640px at 84% 0%, rgba(70, 130, 220, 0.14) 0%, transparent 62%),
+    radial-gradient(760px 560px at 6% 98%, rgba(61, 220, 151, 0.05) 0%, transparent 58%),
+    radial-gradient(140% 120% at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+body.bg-navy {
+  --bg: #0b1c33;
+  --grid-line: rgba(130, 190, 255, 0.05);
+}
+
+body.bg-navy::before {
+  background:
+    radial-gradient(920px 640px at 84% 0%, rgba(80, 150, 255, 0.2) 0%, transparent 62%),
+    radial-gradient(760px 560px at 6% 98%, rgba(61, 220, 151, 0.06) 0%, transparent 58%),
+    radial-gradient(140% 120% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+/* 标题行右侧的即时读数 */
+.side-now {
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #3ddc97;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+/* 底部拆成两块：左总计+榜单，右待处理 */
+.bottom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-alerts {
+  display: flex;
+  flex-direction: column;
+  padding: 9px 14px 10px;
+  gap: 4px;
+}
+
+.alerts-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.alerts-sub {
+  font-size: 9.5px;
+  color: #8a9cb5;
+}
+
+.zone-alerts .alerts {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  justify-content: flex-start;
+  gap: 3px;
+  /* 滚动条隐藏但保留滚动；底部用 12px 渐隐提示"还有内容"，不让滚动条破坏观感 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent 100%);
+}
+
+.zone-alerts .alerts::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+.zone-alerts .alert {
+  flex: 0 0 auto;
+  font-size: 11px;
+  align-items: flex-start;
+  line-height: 1.38;
+}
+
+.zone-alerts .alert {
+  white-space: normal;          /* 允许换行，长失败原因不再被硬截一行 */
+}
+
+.zone-alerts .alert span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.zone-alerts .alert-dot {
+  margin-top: 5px;
+}
+
+/* 图表回到单个模块后可以高一些 */
+.activity { height: 148px; }
+
+/* 最终覆盖：图表跟随容器高度，不再被上面的固定高度规则压住 */
+.zone-side .activity-wrap {
+  flex: 1 1 auto;
+  min-height: 130px;
+  display: flex;
+}
+
+.zone-side .activity {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: block;
+}
+
+
+/* ---------- 底部右栏：工具画像 + 告警 ---------- */
+.bottom-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-profile {
+  flex: 0 0 132px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px 9px;
+  gap: 4px;
+}
+
+.profile {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 8px;
+}
+
+.pf-name {
+  flex: 0 0 54px;
+  font-size: 9px;
+  color: #9aabc6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-bar {
+  flex: 1 1 auto;
+  display: flex;
+  height: 5px;
+  border-radius: 2.5px;
+  overflow: hidden;
+  background: #1a2536;
+}
+
+.pf-seg { height: 100%; }
+
+.pf-total {
+  flex: 0 0 34px;
+  text-align: right;
+  font-size: 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #5e6f88;
+}
+
+/* 流水正文两行 */
+.log li { align-items: flex-start; }
+.log li .text {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.38;
+}
+
+/* 卡片底部工具链 */
+.thought-tools {
+  flex: 0 0 auto;
+  margin: 0 12px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: #7d8fa8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thought-tools .arrow { color: #3f5273; margin: 0 3px; }
+
+/* 条形榜占比列 */
+.bar-pct {
+  flex: 0 0 46px;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: #5e6f88;
+}
+
+
+/* 元信息与时间：彻底分开，避免互相压住 */
+.thought-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.thought-meta > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thought-meta .thought-time {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.thought-tools { min-height: 12px; color: #6f8199; }
+
+/* 画像模块留足高度，11 行不裁 */
+.zone-profile { flex: 0 0 148px; }
+.profile { gap: 1px; }
+
+
+/* ---------- 两列布局：左侧主区 + 右侧统计列 ---------- */
+body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-rows: 27vh minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+
+.zone-row { grid-column: 1; grid-row: 1; }
+.zone-mid { grid-column: 1; grid-row: 2; }
+
+.stat-col {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.stat-col .zone-stats {
+  flex: 0 0 auto;
+  height: 286px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 8px 12px 10px;
+}
+
+.stat-col .totals {
+  flex: 0 0 132px;
+  padding-right: 12px;
+  border-right: 1px solid #1e2b40;
+  gap: 2px;
+}
+
+.stat-col .stats {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 10px;
+}
+
+.stat-col .bar-name { flex: 0 0 58px; font-size: 10px; }
+.stat-col .bar-track { height: 5px; }
+.stat-col .bar-out { flex: 0 0 40px; font-size: 10.5px; }
+.stat-col .bar-pct { flex: 0 0 38px; font-size: 9.5px; }
+.stat-col .bar-meta { display: none; }
+
+.stat-col .zone-profile {
+  flex: 0 0 auto;
+  height: 196px;
+}
+
+.stat-col .zone-alerts {
+  flex: 1 1 auto;
+  min-height: 120px;
+}
+
+/* 右侧列更窄，字号相应收一档 */
+.stat-col .pf-name { flex: 0 0 58px; font-size: 9.5px; }
+.stat-col .pf-total { flex: 0 0 30px; font-size: 9.5px; }
+
+
+/* ---------- 右侧统计列细化 ---------- */
+/* 拓扑那格给宽一点，避免胶囊互相压住 */
+.zone-row { grid-template-columns: minmax(260px, 30%) minmax(0, 1fr) 400px; }
+
+.stat-col .zone-stats {
+  height: 300px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-col .rank-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 0;
+}
+
+.stat-col .totals {
+  flex: 0 0 118px;
+  justify-content: flex-start;
+  padding-top: 2px;
+  gap: 3px;
+  border-right: 1px solid #1e2b40;
+  padding-right: 10px;
+}
+
+.stat-col .tt-main b { font-size: 22px; }
+
+.stat-col .stats {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 10px;
+  overflow: hidden;
+}
+
+/* 画像：名字给够宽度，条形上色更亮 */
+.stat-col .zone-profile { height: 204px; }
+.stat-col .pf-row { height: 11px; }
+.stat-col .pf-bar { height: 6px; }
+.stat-col .pf-name { flex: 0 0 66px; font-size: 10px; }
+.stat-col .pf-total { flex: 0 0 34px; font-size: 10px; color: #7d8fa8; }
+
+/* 条形动画：数值变化时条长平滑过渡 */
+.pf-seg { transition: width 600ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+/* 模块标题：字号压过内容区、左侧渐变短条做锚点、下方一条细分隔线 */
+.alerts-head,
+.side-head {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(40, 56, 82, 0.7);
+  margin-bottom: 1px;
+}
+
+.alerts-head .side-name,
+.side-head .side-name {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #c9d6e8;             /* 对比度 13.13，靠亮度+字重压在内容之上 */
+  white-space: nowrap;
+}
+
+/* 前置竖条 3×12px：承担「区块起点」定位，不暗示阅读顺序（故不编号） */
+.alerts-head .side-name::before,
+.side-head .side-name::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 7px;
+  border-radius: 1.5px;
+  background: var(--head-accent, #3ddc97);
+}
+
+/* 各模块竖条色：靠 HTML 的 data-accent 指定 */
+.alerts-head[data-accent="neutral"] .side-name::before { background: #e6edf9; }
+.alerts-head[data-accent="rank"] .side-name::before { background: #3ddc97; }
+.alerts-head[data-accent="profile"] .side-name::before { background: #9aabc6; }
+.alerts-head[data-accent="alert"] .side-name::before { background: #ffb547; }
+
+.alerts-sub,
+.side-sub {
+  font-size: 10px;
+  color: #7d8fa8;             /* 对比度 5.86，原来 #3f5273 只有 2.45 */
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alerts-head .side-name::before { animation: none; }
+  .pf-seg { transition: none; }
+  .thought.is-working {
+    animation: none !important;
+    border-color: color-mix(in srgb, var(--tone) 52%, var(--line));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--tone) 34%, transparent),
+      0 8px 20px -16px color-mix(in srgb, var(--tone) 70%, transparent);
+  }
+  .think-dots i { animation: none !important; opacity: 0.85; }
+  .thought.is-working::before { opacity: 0.9; }
+  .thought.is-working::after { animation: none !important; }
+}
+
+
+/* ---------- 左列三段式：拓扑带 / 图表+流水 / 卡片 ---------- */
+body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+
+.left-col {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-topo {
+  flex: 0 0 168px;
+  min-height: 0;
+}
+
+.mid-row {
+  flex: 0 0 190px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-mid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 拓扑带更宽：胶囊不再互相压 */
+.zone-topo .node-label { font-size: 12px; }
+
+/* 图表底部：均值与刻度分开，不再撞在一起 */
+.act-avg { text-anchor: start; }
+
+
+/* ---------- 最终布局：左主区（拓扑/图表/流水 + 卡片） + 右统计列 ---------- */
+body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+
+.left-col {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-row {
+  flex: 0 0 38vh;
+  display: grid;
+  grid-template-columns: minmax(340px, 30%) minmax(0, 1fr) 360px;
+  gap: 8px;
+  min-height: 0;
+}
+
+.zone-mid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.stat-col {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.stat-col .zone-stats { flex: 0 0 auto; height: 300px; flex-direction: column; gap: 6px; }
+.stat-col .rank-body { flex: 1 1 auto; min-height: 0; display: flex; }
+.stat-col .totals { flex: 0 0 118px; justify-content: flex-start; padding: 2px 10px 0 0; gap: 3px; border-right: 1px solid #1e2b40; }
+.stat-col .tt-main b { font-size: 22px; }
+.stat-col .stats { flex: 1 1 auto; min-width: 0; padding-left: 10px; overflow: hidden; }
+.stat-col .zone-profile { flex: 0 0 auto; height: 210px; }
+.stat-col .zone-alerts { flex: 1 1 auto; min-height: 130px; }
+.stat-col .pf-name { flex: 0 0 74px; font-size: 10px; }
+.stat-col .pf-total { flex: 0 0 34px; font-size: 10px; color: #7d8fa8; }
+.stat-col .pf-row { height: 11px; }
+.stat-col .pf-bar { height: 6px; }
+
+/* 拓扑胶囊字号由 pillSize() 写入 SVG 属性（成员 10px / 管家 11.5px），这里不再用 CSS 覆盖 */
+
+
+/* ---------- 工具画像：加粗 + 图例，看得清 ---------- */
+.stat-col .zone-profile { flex: 0 0 auto; height: 268px; padding: 9px 13px 11px; gap: 5px; }
+
+.pf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 9.5px;
+  color: #7d8fa8;
+  margin-bottom: 2px;
+}
+
+.pf-legend span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.pf-legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+.stat-col .profile { gap: 4px; }
+
+.stat-col .pf-row { height: 15px; gap: 8px; }
+
+.stat-col .pf-name {
+  flex: 0 0 76px;
+  font-size: 10.5px;
+  color: #c7d4e6;
+}
+
+.stat-col .pf-bar {
+  height: 9px;
+  border-radius: 4.5px;
+  background: #16202f;
+}
+
+.stat-col .pf-seg { border-radius: 0; }
+
+/* 去掉分段之间的缝，整条看起来是连续的 */
+.stat-col .pf-bar .pf-seg:first-child { border-radius: 4.5px 0 0 4.5px; }
+.stat-col .pf-bar .pf-seg:last-child { border-radius: 0 4.5px 4.5px 0; }
+
+.stat-col .pf-total {
+  flex: 0 0 38px;
+  font-size: 10.5px;
+  color: #9aabc6;
+  font-weight: 600;
+}
+
+
+/* ---------- 统计列拆成四块：合计 / 排行 / 画像 / 告警 ---------- */
+.stat-col { gap: 5px; }
+
+.stat-col .zone-totals {
+  flex: 0 0 auto;
+  height: 156px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 14px 11px;
+}
+
+.stat-col .totals {
+  flex: 1 1 auto;
+  border-right: none;
+  padding-right: 0;
+  justify-content: flex-start;
+  gap: 3px;
+}
+
+.stat-col .tt-main b { font-size: 30px; }
+
+.stat-col .zone-rank {
+  flex: 0 0 auto;
+  height: 244px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 14px 11px;
+}
+
+.stat-col .stats {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 0;
+  overflow: hidden;
+}
+
+.stat-col .bar-name { flex: 0 0 84px; font-size: 10.5px; color: #c7d4e6; }
+.stat-col .bar-track { height: 6px; }
+.stat-col .bar-pct { flex: 0 0 44px; font-size: 10px; }
+.stat-col .bar-out { flex: 0 0 48px; font-size: 11px; }
+.stat-col .bar-row { height: 18px; }
+
+.stat-col .zone-profile { flex: 0 0 auto; height: 236px; }
+.stat-col .zone-alerts { flex: 1 1 auto; min-height: 110px; }
+
+
+/* 统计列最终比例：合计留足高度，底部说明不被裁 */
+.stat-col .zone-totals { height: 226px; padding: 8px 14px 8px; }
+.stat-col .zone-totals .tt-foot { font-size: 9px; line-height: 1.3; white-space: normal; }
+.stat-col .zone-rank { height: 238px; }
+.stat-col .zone-profile { height: 218px; }
+.stat-col .zone-alerts { min-height: 132px; }
+
+/* 画像 11 行必须全部放得下 */
+.stat-col .profile { gap: 2px; }
+.stat-col .pf-row { height: 14px; }
+.stat-col .zone-profile { height: 210px; }
+.stat-col .zone-rank { height: 184px; }
+
+/* 画像行改为弹性均分：11 行永远完整装进模块，不再出现最后一行被切 */
+.stat-col .profile {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.stat-col .pf-row {
+  flex: 1 1 0;
+  min-height: 11px;
+  height: auto;
+}
+
+.stat-col .pf-bar { height: 65%; min-height: 5px; }
+
+/* 元信息行与正文之间留出明确间距，避免正文压住元信息 */
+.thought-meta {
+  padding: 7px 14px 4px;
+  line-height: 1.5;
+  min-height: 22px;
+  box-sizing: border-box;
+  font-size: 10px;
+  color: #a7b8ce;
+}
+
+.thought-meta .thought-time { color: #7d8fa8; }
+
+.thought-body {
+  margin-top: 3px;
+}
+
+/* ---------- 成员状态：总数 / 运行 / 空闲 ---------- */
+.stat-col .zone-members {
+  flex: 0 0 auto;
+  height: 74px;
+  padding: 9px 14px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mstat {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.mstat-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 有排队时四组并排，靠 space-between 自然分布，不换行 */
+.mstat-row.is-four { gap: 8px; }
+
+.mstat-cell {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  column-gap: 4px;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 数字：占第 1 列、跨两行，垂直居中 */
+.mstat-cell .v {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 36px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 描述：第 2 列第 2 行，水平贴右、垂直贴底 */
+.mstat-cell .k {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  align-self: end;
+  font-size: 9.5px;
+  line-height: 12px;
+  color: #7d8fa8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.mstat-cell .v.run { color: #3ddc97; }
+.mstat-cell .v.idle { color: #9aabc6; }
+
+/* 描述：第 2 列第 2 行，水平贴右、垂直贴底，与数字保持 4px 间距 */
+.mstat-cell .k {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: end;
+  font-size: 9.5px;
+  line-height: 12px;
+  color: #7d8fa8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.mstat-foot {
+  font-size: 9.5px;
+  color: #6f8199;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ---------- 统计列高度配比：多出来的高度给排行/画像，别在底部留空洞 ---------- */
+.stat-col .zone-totals { flex: 0 0 auto; height: 214px; }
+.stat-col .zone-members { flex: 0 0 auto; height: 90px; }
+.stat-col .zone-rank { flex: 1 1 auto; height: auto; min-height: 150px; }
+/* 排行行必须跟着模块拉伸，否则窗口一高，模块里就空出一大块 */
+.stat-col .zone-rank .bar-row { flex: 1 1 0; height: auto; min-height: 14px; }
+.stat-col .zone-profile { flex: 1 1 auto; height: auto; min-height: 214px; }
+.stat-col .zone-alerts { flex: 0 0 auto; height: 186px; }
+
+/* 成员状态：运行中的分母、等候格的颜色 */
+.mstat-cell .vsub {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f7089;
+  margin-left: 2px;
+}
+
+.mstat-cell .v.wait { color: #ffb547; }
+
+
+/* 统计列只占第一行，与左列同高同底 */
+.stat-col { grid-row: 1 / span 1; }
+
+
+/* ---------- 矮屏降级：视口不够高时各模块等比收紧，避免整列被裁 ---------- */
+@media (max-height: 860px) {
+  .stat-col .zone-totals { height: 172px; }
+  .stat-col .zone-rank { min-height: 136px; }
+  .stat-col .zone-profile { min-height: 168px; }
+  .stat-col .zone-members { height: 74px; }
+  .stat-col .zone-alerts { height: 150px; }
+  /* 矮屏只显示 3 条告警，宁可少一条也不切字、不出滚动条 */
+  .zone-alerts .alert:nth-child(n+4) { display: none; }
+  .odo-xl { --h: 38px; font-size: 34px; line-height: 38px; }
+  .mstat-cell .v { font-size: 26px; line-height: 30px; }
+}
+
+
+/* ---------- ① 成员列表（取代拓扑连线图） ---------- */
+.mlist {
+  position: absolute;
+  inset: 20px 10px 8px;         /* 顶部让出「① 成员」标签 */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+  min-height: 0;
+}
+
+.mlist-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+}
+
+.mrow {
+  flex: 0 0 auto;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 4px;
+  border-radius: 4px;
+  transition: background-color 320ms ease;
+}
+
+/* 状态条：working 全亮 / idle 45%，另加名字加粗作为非颜色的静态标记 */
+.mrow-bar {
+  flex: 0 0 auto;
+  width: 3px;
+  height: 20px;
+  border-radius: 1.5px;
+  background: var(--tone, #64748b);
+  opacity: 0.45;
+  transition: opacity 240ms ease;
+}
+
+.mrow.is-working .mrow-bar { opacity: 1; }
+
+.mrow-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  color: #b9c8dd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mrow.is-working .mrow-name {
+  color: #e6edf9;
+  font-weight: 600;            /* 非颜色标记，色觉障碍也能区分 */
+}
+
+.mrow-num {
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: #7d8fa8;
+  font-variant-numeric: tabular-nums;
+}
+
+.mrow.is-working .mrow-num { color: #3ddc97; }
+
+/* 派活/回执：行背景闪一次，单次 360ms，不循环 */
+.mrow.flash-req { background: rgba(255, 181, 71, 0.16); }
+.mrow.flash-rep { background: rgba(61, 220, 151, 0.14); }
+.mrow.flash-dim { background: rgba(100, 116, 139, 0.16); }
+
+
+/* ---------- ① 环形成员图（?topo=list 可回退到列表） ---------- */
+.tring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+
+body.topo-ring .mlist { display: none; }
+body.topo-ring .tring { display: block; }
+
+/* 环形里的连线：默认极淡，只作结构暗示，不用线宽编码信息 */
+.tring .rline {
+  stroke: rgba(96, 132, 178, 0.22);
+  stroke-width: 1;
+  fill: none;
+}
+
+/* 有流量时该条线短暂提亮一次（单次，不循环） */
+.tring .rline.is-live {
+  stroke: rgba(61, 220, 151, 0.72);
+  transition: stroke 420ms ease;
+}
+
+.tring .rnode circle {
+  transition: r 260ms ease, fill-opacity 260ms ease, stroke-opacity 260ms ease;
+}
+
+.tring .rlabel {
+  font-size: 12px;
+  fill: #b9c8dd;
+  paint-order: stroke;
+  stroke: rgba(8, 13, 22, 0.85);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.tring .rnode.is-working .rlabel { fill: #e6edf9; font-weight: 600; }
+
+.tring .rhub-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+
+/* 运行中节点的脉冲光环：唯一常驻循环，周期 2.6s（过红线），空闲时元素根本不存在 */
+.tring .rhalo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: halo-breathe 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* 呼吸而不是涟漪：1.45 倍就收，避免扩散到相邻节点 */
+@keyframes halo-breathe {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  60%  { transform: scale(1.45); opacity: 0; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* 名字下方那行小字：说明此刻在用什么工具 */
+.tring .rhint {
+  font-size: 9.5px;
+  fill: #8fa8c4;
+  paint-order: stroke;
+  stroke: rgba(8, 13, 22, 0.85);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.tring .rnode.is-working .rhint { fill: #8fb7a2; }
+
+
+/* ---------- 排行与画像统一节奏：同为 18px 行、5px 条、84px 名字列 ---------- */
+.stat-col .stats,
+.stat-col .profile {
+  justify-content: space-between;   /* 行高固定，剩余空间均匀进间距，不在底部留空洞 */
+}
+
+.stat-col .bar-row,
+.stat-col .pf-row {
+  flex: 0 0 18px;
+  height: 18px;
+  min-height: 0;
+}
+
+.stat-col .bar-track,
+.stat-col .pf-bar {
+  height: 5px;
+  min-height: 5px;
+}
+
+.stat-col .bar-name,
+.stat-col .pf-name {
+  flex: 0 0 84px;
+  font-size: 10.5px;
+}
+
+.stat-col .bar-pct { flex: 0 0 42px; font-size: 10px; }
+.stat-col .bar-out { flex: 0 0 52px; font-size: 11px; }
+.stat-col .pf-total { flex: 0 0 40px; font-size: 10.5px; }
+
+
+/* ---------- 排行与画像统一：16px 行距、5px 条厚、84px 名字列（提高优先级覆盖旧规则） ---------- */
+.stat-col .zone-rank .bar-row,
+.stat-col .zone-profile .pf-row {
+  flex: 0 0 16px;
+  height: 16px;
+  min-height: 16px;
+}
+
+.stat-col .zone-rank .bar-track,
+.stat-col .zone-profile .pf-bar {
+  height: 5px;
+  min-height: 5px;
+}
+
+.stat-col .zone-rank .stats,
+.stat-col .zone-profile .profile {
+  justify-content: space-between;
+}
+
+/* 11 行 × 16px + 标题与内边距 = 220，低于这个高度就会裁行 */
+.stat-col .zone-rank { min-height: 220px; }
+.stat-col .zone-profile { min-height: 220px; }
+.stat-col .zone-alerts { flex: 1 1 auto; height: auto; min-height: 130px; max-height: 200px; }
+
+
+/* 收尾覆盖：两图节奏统一为「弹性行、行距上限 16px、条厚 5px」 */
+.stat-col .zone-rank .bar-row,
+.stat-col .zone-profile .pf-row {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 12px;
+  max-height: 16px;
+}
+
+.stat-col .zone-rank { min-height: 200px; }
+.stat-col .zone-profile { min-height: 200px; }
+.stat-col .zone-alerts { flex: 1 1 auto; height: auto; min-height: 130px; }
+
+/* 矮屏隐藏画像图例，把高度让给行 */
+@media (max-height: 1000px) {
+  .zone-profile .pf-legend { display: none; }
+}
+
+
+/* 最终配比：排行让出高度（行可压到 12px），画像与告警保住各自内容 */
+.stat-col .zone-rank { min-height: 180px; }
+.stat-col .zone-profile { min-height: 206px; }
+.stat-col .zone-alerts { min-height: 180px; max-height: 200px; }
+@media (max-height: 1000px) {
+  .stat-col .zone-alerts { min-height: 168px; }
+}
+
+
+/* ---------- 全队合计：底部留出呼吸位，别让标签贴到底框 ---------- */
+.stat-col .totals { padding: 2px 10px 0 0; }
+.totals .tt-grid { padding: 6px 0 10px; }
+
+/* 矮屏：整体缩一档，保证 42px 大数与 2×2 小指标都不被裁 */
+@media (max-height: 1000px) {
+  .stat-col .zone-totals { height: 196px; }
+  .odo-xl { --h: 34px; font-size: 30px; line-height: 34px; }
+  .odo-md { --h: 28px; font-size: 25px; line-height: 28px; }
+  .totals .tt-cap { font-size: 9.5px; line-height: 12px; }
+  .totals .tt-sub { font-size: 10px; line-height: 13px; }
+  .totals .tt-grid { gap: 2px 12px; padding: 4px 0 8px; }
+  .totals .tt-main { min-height: 36px; }
+}
+
+
+/* 大屏：合计模块加高 10px，容纳 42px 大数 + 2×2 与底部留白 */
+@media (min-height: 1001px) {
+  .stat-col .zone-totals { height: 226px; }
+}
+
+
+/* ---------- 超矮屏（≤820）：11 行放不下，改成各显示前 8 名，整列才不会被页面裁掉 ---------- */
+@media (max-height: 820px) {
+  .stat-col .zone-totals { height: 160px; }
+  .stat-col .zone-rank { min-height: 140px; }
+  .stat-col .zone-profile { min-height: 144px; }
+  .stat-col .zone-members { height: 66px; }
+  .stat-col .zone-alerts { min-height: 126px; max-height: 140px; }
+  /* 768 高度只放得下 2 条告警，宁可少一条也不切字 */
+  .zone-alerts .alert:nth-child(n+3) { display: none; }
+  .stat-col .zone-rank .bar-row:nth-child(n+9),
+  .stat-col .zone-profile .pf-row:nth-child(n+9) { display: none; }
+  .totals .tt-main { min-height: 30px; }
+  .odo-xl { --h: 28px; font-size: 24px; line-height: 28px; }
+  .odo-md { --h: 24px; font-size: 21px; line-height: 24px; }
+  .totals .tt-cap { font-size: 9px; line-height: 11px; }
+  .totals .tt-sub { font-size: 9.5px; line-height: 12px; }
+  .mstat-cell .v { font-size: 22px; line-height: 26px; }
+  .mrow { height: 26px; }
+}
+
+
+
+
+
+/* 一道光 = 亮头 + 渐远的三层柔光（用不同线宽/透明度叠，比 blur 稳，不会被裁边） */
+.thought-ring .ring-tail {
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 7 93;
+  animation: ring-run 3.6s linear infinite;
+  animation-delay: -0.5s;
+}
+
+.thought-ring .ring-halo {
+  stroke: rgba(205, 228, 255, 0.16);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 5 95;
+  animation: ring-run 3.6s linear infinite;
+  animation-delay: -0.36s;
+}
+
+.thought-ring .ring-halo2 {
+  stroke: rgba(180, 214, 255, 0.08);
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-dasharray: 9 91;
+  animation: ring-run 3.6s linear infinite;
+  animation-delay: -0.72s;
+}
+
+.thought:not(.is-working) .ring-tail,
+.thought:not(.is-working) .ring-halo,
+.thought:not(.is-working) .ring-halo2 { animation: none; }
+
+
+
+
+
+
+}
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thought.is-working .think-text {
+    animation: none;
+    -webkit-text-fill-color: #a9b8cd;
+    color: #a9b8cd;
+  }
+}
+
+
+/* ---------- 干活态：边框上一道柔光扫过（像 DSH 思考态那道光，只是画在边框上） ---------- */
+.thought-ring .ring-halo2 {
+  stroke: rgba(190, 214, 255, 0.10);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 14 86;
+  filter: blur(3px);
+  animation: ring-run 3.4s ease-in-out infinite;
+  animation-delay: -0.55s;
+}
+
+.thought-ring .ring-halo {
+  stroke: rgba(214, 232, 255, 0.20);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 10 90;
+  filter: blur(1.6px);
+  animation: ring-run 3.4s ease-in-out infinite;
+  animation-delay: -0.42s;
+}
+
+.thought-ring .ring-tail {
+  stroke: rgba(236, 244, 255, 0.45);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-dasharray: 6 94;
+  filter: blur(0.8px);
+  animation: ring-run 3.4s ease-in-out infinite;
+  animation-delay: -0.3s;
+}
+
+.thought-ring .ring-spark {
+  stroke: #ffffff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 1.6 98.4;
+  filter: blur(0.3px) drop-shadow(0 0 6px rgba(210, 230, 255, 0.9));
+  animation: ring-run 3.4s ease-in-out infinite;
+}
+
+
+/* 柔光加宽：外圈更糊、更淡，看起来是光晕而不是白色条 */
+.thought-ring .ring-halo2 {
+  stroke-width: 20;
+  stroke-dasharray: 20 80;
+  filter: blur(5px);
+  stroke: rgba(190, 214, 255, 0.09);
+}
+
+.thought-ring .ring-halo {
+  stroke-width: 11;
+  stroke-dasharray: 13 87;
+  filter: blur(2.8px);
+  stroke: rgba(214, 232, 255, 0.17);
+}
+
+.thought-ring .ring-tail {
+  stroke-width: 4.5;
+  stroke-dasharray: 7 93;
+  filter: blur(1.4px);
+  stroke: rgba(236, 244, 255, 0.4);
+}
+
+.thought-ring .ring-spark {
+  stroke-width: 2;
+  filter: blur(0.5px) drop-shadow(0 0 7px rgba(210, 230, 255, 0.85));
+}
+
+
+/* 提亮外圈，让柔光在实屏上真的看得见 */
+.thought-ring .ring-halo2 { stroke: rgba(190, 214, 255, 0.16); }
+.thought-ring .ring-halo { stroke: rgba(214, 232, 255, 0.3); }
+.thought-ring .ring-tail { stroke: rgba(240, 246, 255, 0.55); stroke-dasharray: 9 91; }
+.thought-ring .ring-spark { stroke: #ffffff; stroke-dasharray: 2.2 97.8; }
+
+
+/* ---------- 干活态动画三选一（?fx=glow|inset|scan），默认 scan ---------- */
+
+/* A：卡片外发光呼吸（不涉及裁剪，永远不会被裁） */
+@keyframes fx-glow {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(150, 195, 255, 0.16); }
+  50%      { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 20px 2px rgba(150, 200, 255, 0.30), 0 0 0 1px rgba(200, 226, 255, 0.34); }
+}
+body.fx-glow .thought.is-working { animation: fx-glow 2.8s ease-in-out infinite; }
+
+/* B：卡片内圈柔光呼吸（inset 阴影，也不会溢出） */
+
+
+/* C：一条柔光线自上而下扫过卡面（宽 120px、blur 6px，不是边框、不是细条） */
+body.fx-scan .thought.is-working::after {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: -90px;
+  height: 90px;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(170, 205, 255, 0) 0%,
+    rgba(200, 228, 255, 0.07) 42%,
+    rgba(255, 255, 255, 0.11) 50%,
+    rgba(200, 228, 255, 0.07) 58%,
+    rgba(170, 205, 255, 0) 100%
+  );
+  filter: blur(4px);
+  animation: fx-scan 3.4s cubic-bezier(0.4, 0, 0.5, 1) infinite;
+}
+
+@keyframes fx-scan {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(360px); }
+}
+
+
+/* 旧的边框绕行光全部停用，干活态只留 fx 三选一 */
+.thought-ring { display: none !important; }
+
+
+/* 内圈柔光（UI设计师定稿参数）：用成员色、3.6s、alpha 0.10→0.26、blur 20→32 / spread 4→12 */
+@keyframes fx-inset {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1px color-mix(in srgb, var(--tone, #64748b) 45%, transparent),
+      inset 0 0 22px 6px color-mix(in srgb, var(--tone, #64748b) 24%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1.5px color-mix(in srgb, var(--tone, #64748b) 90%, transparent),
+      inset 0 0 44px 18px color-mix(in srgb, var(--tone, #64748b) 62%, transparent);
+  }
+}
+
+body.fx-inset .thought.is-working { animation: fx-inset 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+
+/* 静态顶部内高光：只看干活的卡，1px 渐变线，两端淡出，不参与动画 */
+body.fx-inset .thought.is-working::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, var(--tone, #64748b) 70%, transparent) 50%,
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.fx-inset .thought.is-working { animation: none; }
+}
+
+
+/* 成员之间的常驻连线：淡蓝弧线，往来越多越实 */
+.tring .mlink {
+  stroke: rgba(126, 160, 205, 0.55);
+  stroke-dasharray: 3 4;
+}
+
+/* 任务流转条目：已回执待确认的派活，可点击确认后消失 */
+.alert.wait {
+  border-left-color: rgba(251, 191, 36, 0.85);
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.10), transparent 72%);
+}
+
+.alert-task {
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.alert-task:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.22), transparent 78%);
+}
+
+.alert-tick {
+  margin-left: auto;
+  padding: 1px 7px;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  color: #fcd34d;
+  white-space: nowrap;
+}
+
+.alert-task:hover .alert-tick {
+  background: rgba(251, 191, 36, 0.20);
+  border-color: rgba(251, 191, 36, 0.9);
+}
+
+/* 任务条单行省略：原来长标题会折成三行把面板撑满 */
+.alert-task > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 待确认用青蓝而不是黄：它不是错误，是等你看一眼；黄色留给真正的失败 */
+.alert.wait {
+  border-left-color: rgba(103, 232, 249, 0.85);
+  background: linear-gradient(90deg, rgba(103, 232, 249, 0.10), transparent 72%);
+}
+
+.alert-task:hover {
+  background: linear-gradient(90deg, rgba(103, 232, 249, 0.22), transparent 78%);
+}
+
+.alert-tick {
+  border-color: rgba(103, 232, 249, 0.55);
+  color: #a5f3fc;
+}
+
+.alert-task:hover .alert-tick {
+  background: rgba(103, 232, 249, 0.20);
+  border-color: rgba(103, 232, 249, 0.9);
+}
+
+/* ==========================================================================
+   全队合计：数字对齐统一
+   —— 数字滚动组件把不足位数的空格槽补在**前面**（.odo-gap 占 1ch、visibility:hidden），
+      于是主数字「1.6M」整体右移，而下面 2×2 网格是左对齐，两种对齐混在一起。
+   —— 用户反馈「这个字要不要左对齐啊,现在不知道怎么对齐的」
+   —— 处置：在合计区块内取消隐藏占位槽，全部按内容左对齐；
+      代价是位数变化时（K→M 这种跨量级）宽度会有一次轻微跳动。
+   ========================================================================== */
+
+.totals .odo-gap {
+  display: none;
+}
+
+.totals .tt-main,
+.totals .tt-grid {
+  padding-left: 0;
+  margin-left: 0;
+}
+
+/* 主数字与下方网格同一左基准 */
+.totals .tt-main {
+  justify-content: flex-start;
+}
+
+/* 回退（2026-11-04）：上一版把 .odo-gap 设成 display:none 是错的。
+   原设计：gap 用 visibility:hidden 占位（1ch），JS 再用 margin-left: -1ch × gaps 抵消，
+   两者相消后数字正好落在容器左边。去掉占位后负 margin 仍然生效，数字被推溢出面板。
+   这里恢复占位。 */
+.totals .odo-gap {
+  display: block;
+  visibility: hidden;
+}
+
+/* 确认反馈：点下去先变灰 + 右滑 + 「确认 ✓」变绿，550ms 后再刷新移除。
+   之前点完立刻重渲染、下一条马上补位，用户以为没生效。 */
+.alert-task.alert-done {
+  opacity: 0.4;
+  transform: translateX(8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
+}
+
+.alert-task.alert-done .alert-tick {
+  background: rgba(61, 220, 151, 0.22);
+  border-color: rgba(61, 220, 151, 0.85);
+  color: #3ddc97;
+}
+
+.alert-task.alert-done .alert-tick::after {
+  content: ' ✓';
+}
+
+/* ==========================================================================
+   任务流转模块（2026-11-04）
+   —— 两位设计师分歧在位置：UI设计师 主张右栏新增第 6 块（需压缩排行/画像 + 78px 缺口），
+      设计规范工程师 主张搬到「左列」（实测左列并不存在，顶部是横排三块 + 中间思考区）。
+   —— 裁：不新增区块、不搬位置，右栏原地把「需要你处理」升级成「任务流转」。
+      撤掉原告警块的 200px + 从合计/排行/画像各让一点（净 176px）→ 376px 够放 320px 模块。
+      五块总高仍是 1040px，一个区块都没增加，顶部三块与中间思考卡完全不动。
+   ========================================================================== */
+
+@media (min-height: 1001px) {
+  .stat-col .zone-totals { height: 190px; }
+  .stat-col .zone-rank { height: 200px; min-height: 180px; }
+  .stat-col .zone-profile { height: 240px; min-height: 206px; }
+  .stat-col .zone-members { height: 90px; }
+  .stat-col .zone-alerts {
+    height: 320px;
+    min-height: 320px;
+    max-height: 320px;
+  }
+}
+
+/* 任务条：两行结构——第一行标题 + 状态徽标，第二行「派给谁 · 相对时间」 */
+.alert-task {
+  align-items: flex-start;
+  padding: 6px 9px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.alert-task .task-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-task .task-title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #dbe7f8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-task .task-sub {
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: #7d8fa8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-task .alert-tick {
+  align-self: center;
+  margin-left: 8px;
+}
+
+/* 时间用相对时间，10.5px；原来 10px 的 #5f7089 对比度只有 3.37，不达标 */
+.alert-task .task-age {
+  font-size: 10.5px;
+  color: #7d8fa8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 任务模块内滚动：滚动条隐藏，底部渐隐提示还有更多 */
+.zone-alerts .alerts {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.zone-alerts .alerts::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 任务流转是团队内部流水，用户只旁观：去掉指针手势与悬停强调 */
+.alert-task {
+  cursor: default;
+}
+
+.alert-task:hover {
+  background: linear-gradient(90deg, rgba(103, 232, 249, 0.12), transparent 72%);
+}
+
+/* 状态徽标：处理中=橙、已回执=青，都是纯展示不是按钮 */
+.alert-tick.is-running {
+  border-color: rgba(251, 146, 60, 0.6);
+  color: #fdba74;
+  background: rgba(251, 146, 60, 0.10);
+}
+
+.alert-tick.is-acked {
+  border-color: rgba(103, 232, 249, 0.5);
+  color: #a5f3fc;
+  background: rgba(103, 232, 249, 0.08);
+}
+
+.alert.warn {
+  border-left-color: rgba(251, 146, 60, 0.8);
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.08), transparent 72%);
+}
+
+/* ==========================================================================
+   任务流转独立成块（2026-11-04 最终版）
+   —— 用户要求：任务流转单独一个模块、只读旁观；「需要你处理」保持独立。
+   —— 两位设计师分歧：
+      UI设计师 主张放思考区右侧（360px），实测会把 11 张思考卡从 4 列挤成 4 行，
+        卡高要从 200 压到 150（切 25% 正文）；
+      设计规范工程师 主张切日志流那一格，思考卡一张不动。
+   —— 裁：采纳规范工程师的方案 C。日志流本来就是滚动流，压到 142px 仍可用；
+      思考卡是核心内容不能压。且两块右边缘都是 1472，与思考区天然对齐。
+   ========================================================================== */
+
+.zone-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 日志流：410 → 142px（约 9 行） */
+.zone-log .log {
+  flex: 0 0 142px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 任务流转：占满剩余 260px */
+.zone-log .task-zone {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(40, 56, 92, 0.5);
+}
+
+.zone-log .taskflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.zone-log .taskflow::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.zone-log .task-empty {
+  padding: 10px 2px;
+  font-size: 11px;
+  color: #5e6f88;
+}
+
+/* —— 右栏恢复原配置：任务流转搬走后，「需要你处理」回到 200px —— */
+@media (min-height: 1001px) {
+  .stat-col .zone-totals { height: 226px; }
+  .stat-col .zone-rank { height: 242px; min-height: 180px; }
+  .stat-col .zone-profile { height: 282px; min-height: 206px; }
+  .stat-col .zone-members { height: 90px; }
+  .stat-col .zone-alerts {
+    height: 200px;
+    min-height: 180px;
+    max-height: 200px;
+  }
+}
+
+/* 修正：`.log` 原本是 position:absolute（inset 22px），我的 flex 高度根本没生效，
+   结果日志流和任务流转叠在一起；`.zone-tag` 也是 absolute，两个标签也会重叠。
+   改成正常流，并给标签各留出顶部空间。 */
+.zone-log {
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.zone-log .log {
+  position: static;
+  inset: auto;
+  flex: 0 0 128px;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+}
+
+.zone-log .task-zone {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(40, 56, 92, 0.55);
+}
+
+/* ==========================================================================
+   位置修正（用户 2026-11-04）：任务流转放「活跃度」下半，日志流不动
+   —— 上一版切的是日志流那一格，用户要求切活跃度、事件流保持完整。
+   ========================================================================== */
+
+/* 活跃度格：上半曲线、下半任务流转 */
+.zone-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.zone-side .activity-wrap {
+  flex: 0 0 168px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 日志流恢复完整 410px（原来被切走 260px） */
+.zone-log {
+  padding-top: 20px;
+}
+
+.zone-log .log {
+  position: static;
+  inset: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+}
+
+/* 任务流转块（现在在活跃度格里） */
+.zone-side .task-zone {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(40, 56, 92, 0.55);
+}
+
+.zone-side .task-zone .side-head {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+}
+
+.zone-side .taskflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.zone-side .taskflow::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.zone-side .task-empty {
+  padding: 8px 2px;
+  font-size: 11px;
+  color: #5e6f88;
+}
+
+/* 主数字对齐的最终修法：占位槽不参与布局（JS 的负 margin 已同时去掉）。
+   两处必须一起改——只改 CSS 会让负 margin 把数字推出面板，只改 JS 会留一段空白。 */
+.totals .odo-gap {
+  display: none;
+}
+
+/* ==========================================================================
+   滚动条统一隐藏（2026-11-04）
+   —— 用户指出日志流右侧那条是浏览器原生滚动条，和亚光暗底完全不搭。
+   —— 日志流恢复 388px 后内容变多，滚动条就冒出来了；之前只给任务流转和告警隐藏过。
+   ========================================================================== */
+
+.zone-log .log,
+.zone-side .taskflow,
+.zone-alerts .alerts,
+.stats,
+.profile,
+.thoughts,
+.zone-mid {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* 旧 Edge */
+}
+
+.zone-log .log::-webkit-scrollbar,
+.zone-side .taskflow::-webkit-scrollbar,
+.zone-alerts .alerts::-webkit-scrollbar,
+.stats::-webkit-scrollbar,
+.profile::-webkit-scrollbar,
+.thoughts::-webkit-scrollbar,
+.zone-mid::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* ==========================================================================
+   任务流转单条重设计（采纳 UI设计师 方案 B）
+   —— 用户要求：「显示任务名就行了吧显示谁的任务,加一个状态」
+   —— 病根：第二行「等待回执」和右侧徽标「处理中」是同一件事说两遍，
+      「→」在只读列表里也只是装饰。删掉重复后，任务名放宽到 42 字可完整显示。
+   —— 状态改用页面强调蓝 #7aa7de，不借用五态语义色（借用会让「处理中」被读成「卡住」）。
+   ========================================================================== */
+
+.zone-side .taskflow {
+  gap: 2px;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  grid-template-rows: 18px 16px;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+  /* 高度必须够装：5(上) + 18 + 2 + 16 + 5(下) = 46。
+     原来写 44 但实际需要 52，内容溢出 8px，导致第二行贴底、圆点的跨行区域被压扁。 */
+  padding: 5px 10px;
+  height: 46px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: rgba(90, 169, 255, 0.04);
+}
+
+.task-dot {
+  grid-row: 1 / span 2;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7aa7de;
+  box-shadow: 0 0 6px rgba(90, 169, 255, 0.6);
+}
+
+.task-title {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #c9d6e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-to {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: #8fa3bd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-to::before {
+  content: '→ ';
+  color: #5b6d86;
+}
+
+.task-chip {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #8fc4ff;
+  background: rgba(90, 169, 255, 0.14);
+  border: 1px solid rgba(90, 169, 255, 0.32);
+  white-space: nowrap;
+}
+
+/* 空态：左对齐、垂直居中，不做成"弹窗"的样子 */
+.zone-side .task-empty {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 10px;
+  font-size: 11px;
+  color: #7d8fa8;
+}
+
+/* 修正（2026-11-04）：上一条漏算了 padding。
+   原写法 height:44px + padding 7px + 两行 18/16 + gap 4 → 需要 52px，
+   内容溢出 8px，第二行压到任务名上，看起来像一条线穿过文字。
+   重算：5 + 17 + 2 + 15 + 5 = 44px，刚好装下。 */
+.task-row {
+  grid-template-rows: 17px 15px;
+  row-gap: 2px;
+  padding: 5px 10px;
+  height: 44px;
+}
+
+.task-title {
+  line-height: 17px;
+}
+
+.task-to {
+  line-height: 15px;
+}
+
+/* ==========================================================================
+   任务条改用绝对定位布局（2026-11-04）
+   —— 用户刷新后仍看到任务名下方有一条横线；我这边 Chrome 3 倍放大看不到，
+      判断是 grid-template-rows 两行在 Safari/WKWebView 下的子像素行边界。
+   —— 干脆不用 grid：容器只做定位，两行文字各自 block + 明确 line-height，
+      点与徽标绝对定位。没有任何行边界可被渲染成线。
+   ========================================================================== */
+
+.task-row {
+  position: relative;
+  display: block;
+  height: 44px;
+  padding: 6px 72px 6px 22px;
+  box-sizing: border-box;
+  border: 0;
+  outline: 0;
+  border-radius: 6px;
+  background: rgba(90, 169, 255, 0.04);
+}
+
+.task-dot {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  margin-top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7aa7de;
+  box-shadow: 0 0 6px rgba(90, 169, 255, 0.6);
+}
+
+.task-title {
+  display: block;
+  height: 17px;
+  line-height: 17px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #c9d6e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 0;
+  background: none;
+}
+
+.task-to {
+  display: block;
+  height: 15px;
+  line-height: 15px;
+  min-width: 0;
+  font-size: 11px;
+  color: #8fa3bd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 0;
+  background: none;
+}
+
+.task-to::before {
+  content: '→ ';
+  color: #5b6d86;
+}
+
+.task-chip {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #8fc4ff;
+  background: rgba(90, 169, 255, 0.14);
+  border: 1px solid rgba(90, 169, 255, 0.32);
+  white-space: nowrap;
+}
+
+/* 行之间只靠 gap 分隔，不画任何线 */
+.zone-side .taskflow {
+  gap: 4px;
+}
+
+/* 去掉任务流转标题下方那条横线
+   —— 来源是 .side-head 自带的 border-bottom（rgba(40,56,82,.7)），
+      它本来给「活跃度」那种独立区块做标题分隔用的，
+      搬进任务流转里就成了一条莫名其妙的横线。 */
+.zone-side .task-zone .side-head {
+  border-bottom: 0;
+}
+
+/* 按 UI设计师 复核意见微调（2026-11-04）
+   —— 她确认去掉 border-bottom、改绝对定位都没破坏设计意图；
+   —— 但指出两行之间应有 5px 呼吸，且任务名必须有明确宽度才能出省略号。
+   算式重算：padding-top 6 + 行1 18 + 间距 5 + 行2 15 + padding-bottom 6 = 50。
+   原式漏了 padding-bottom，写 44 导致内容溢出 6px：第二行贴死底部、圆点跨行区域被压。 */
+.task-row {
+  padding: 6px 76px 6px 22px;
+  height: 50px;
+}
+
+.task-title {
+  height: 18px;
+  line-height: 18px;
+}
+
+.task-to {
+  height: 15px;
+  line-height: 15px;
+  margin-top: 5px;
+}
+
+.task-dot {
+  left: 12px;
+}
+
+.task-chip {
+  right: 12px;
+}
+
+/* 任务流转：标题与列表直接相接（2026-11-04）
+   —— 用户：「数据直接挨着标题，所以感觉是多了一根线，把列表放标题下面」
+   —— 处置：去掉 .task-zone 的 border-top（那条分隔线就是"多出来的线"），
+      标题从绝对定位改回正常流，列表紧跟其后，只留 4px 间距。 */
+.zone-side .task-zone {
+  border-top: 0;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zone-side .task-zone .side-head {
+  position: static;
+  border-bottom: 0;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.zone-side .taskflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 4px;
+}
+
+/* 活跃度与任务流转之间改用留白分隔，不画线 */
+.zone-side .activity-wrap {
+  margin-bottom: 8px;
+}
+
+/* 空态也紧贴标题，不再垂直居中到模块底部 */
+.zone-side .task-empty {
+  display: block;
+  height: auto;
+  padding: 6px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #7d8fa8;
+}
+
+/* 日志流补回内边距（2026-11-04）
+   —— 用户指出「事件流这个贴死边了」。
+   —— 根因：.log 原本靠 position:absolute + inset:22px 12px 10px 提供内边距，
+      我把它改成 static 参与 flex 布局时，inset 失效，12px 左右和 22px 顶部一起丢了，
+      于是文字直接顶到框和标签上。
+   —— 现在显式给 padding，数值与原来的 inset 对齐。 */
+.zone-log .log {
+  padding: 2px 12px 8px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   活跃度与任务流转拆成两个独立框（2026-11-04）
+   —— 用户：「这块分开上下两个,不要放一个框里」
+   —— 原来两块共用一个 .zone-side 外框，中间只靠留白分隔；现在各自是独立 .zone，
+      各有自己的边框、圆角和背景，中间 8px 间距。
+   ========================================================================== */
+
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.zone-activity {
+  flex: 0 0 168px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.zone-taskflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+}
+
+.zone-activity .activity-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+/* 任务流转内部：标题在上、列表占满剩余 */
+.zone-taskflow .side-head {
+  position: static;
+  flex: 0 0 auto;
+  border-bottom: 0;
+  margin: 0 0 4px;
+}
+
+.zone-taskflow .taskflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.zone-taskflow .taskflow::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 补 order：.zone-topo 是 order:1、.zone-log 是 order:3，
+   新加的 .side-col 默认 order:0 会插到最前面，把三块的顺序打乱。 */
+.side-col {
+  order: 2;
+}
+
+/* 两个框的高度重分配：活跃度要装下 标题+曲线+底部均值标注，168px 不够；
+   总高 410、间距 8 → 活跃度 218 + 任务流转 184 */
+.zone-activity {
+  flex: 0 0 218px;
+}
+
+.zone-taskflow {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* ==========================================================================
+   活跃度 / 任务流转 两块收尾（2026-11-04）
+   ① 标题压在虚线边框上 → 给两个框加内边距
+   ② 曲线只占 148px，撑不满框 → SVG 高度跟随容器
+   ③ 无任务时让活跃度占满（用户要求：有任务才展示下面，没有就上面占满）
+   ========================================================================== */
+
+.zone-activity,
+.zone-taskflow {
+  padding: 7px 10px 9px;
+  box-sizing: border-box;
+}
+
+/* 曲线撑满可用高度（原来写死 height:148px，框变高后下方留一大片空） */
+.zone-activity .activity-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.zone-activity .activity {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+}
+
+/* 无任务：活跃度吃掉全部高度，任务流转只留标题那一行 */
+.side-col.no-tasks .zone-activity {
+  flex: 1 1 auto;
+}
+
+.side-col.no-tasks .zone-taskflow {
+  flex: 0 0 auto;
+}
+
+.side-col.no-tasks .zone-taskflow .taskflow {
+  display: none;
+}
+
+/* 无任务时任务流转整块消失，活跃度独占 410px（用户 2026-11-04） */
+.side-col.no-tasks .zone-taskflow {
+  display: none;
+}
+
+/* 刚回执的任务：绿色标记，停留 8 秒后从列表消失 */
+.task-row.is-done {
+  background: rgba(61, 220, 151, 0.06);
+}
+
+.task-row.is-done .task-dot {
+  background: #3ddc97;
+  box-shadow: 0 0 6px rgba(61, 220, 151, 0.6);
+}
+
+.task-row.is-done .task-to {
+  color: #7fd8b0;
+}
+
+.task-chip.is-done {
+  color: #3ddc97;
+  background: rgba(61, 220, 151, 0.14);
+  border-color: rgba(61, 220, 151, 0.42);
+}
+
+/* ==========================================================================
+   拓扑连线：任务执行期间持续流动（设计规范工程师裁决 2026-11-05）
+   —— 旧规则「全页常驻循环 ≤1」管的是装饰动效；这条线在动 = 这个 Bot 还在跑，
+      它本身是状态表达，分开算。
+   —— 名额：最多 3 条走完整循环，按「最近开始」占位；第 4 条起只做静态亮线。
+   —— 周期 3.2s（1.5s 是给"飞一次"用的，循环几分钟会看成闪）。
+   —— 卡住/失败不参与循环：循环表示"正常推进"，不表示"出事"。
+   ========================================================================== */
+
+@keyframes link-run {
+  to { stroke-dashoffset: -48; }
+}
+
+.mlink.is-running {
+  stroke: #3ddc97;
+  stroke-opacity: 0.62;
+  stroke-dasharray: 4 8;
+  animation: link-run 3.2s linear infinite;
+}
+
+/* 名额外的：加亮但不走 dash —— 保留"还在跑"的信息，不增加运动源 */
+.mlink.is-hot {
+  stroke: #3ddc97;
+  stroke-opacity: 0.34;
+}
+
+/* 页面不可见时暂停所有循环，回来再开（常驻大屏挂一整天） */
+html[data-doc-hidden] .mlink.is-running {
+  animation-play-state: paused;
+}
+
+/* 减少动效：循环数归 0，但保留静态亮描边——只关动画会丢信息 */
+@media (prefers-reduced-motion: reduce) {
+  .mlink.is-running {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-opacity: 0.85;
+  }
+  .mlink.is-hot {
+    stroke-opacity: 0.55;
+  }
+}
+
+/* 环形容器加宽（用户确认可以占用活跃度一点空间）：
+   249 → 500，活跃度相应压缩。rx/ry 由 JS 按新宽度重算。 */
+body .zone-row,
+body.swap .zone-row {
+  grid-template-columns: 500px minmax(0, 1fr) 540px;
+}
+
+/* 容器 500 → 520（UI设计师 方案：rx 可到 150，名字右端仍留余量） */
+body .zone-row,
+body.swap .zone-row {
+  grid-template-columns: 520px minmax(0, 1fr) 540px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   连线三层分级（UI设计师 方案 2026-11-05）
+   —— 之前：中心→成员和成员之间有往来全是一个样，分不出主次；
+      而且成员之间那条还是虚线（dasharray 3 4），看着像"待定关系"。
+   —— 现在：主干粗、邻接细且更淡、执行中最强。
+   ══════════════════════════════════════════════════════════ */
+
+/* 主干：中心 → 成员，表达"向谁汇报" */
+.tring .rline {
+  stroke: #33475f;
+  stroke-width: 1.5;
+  stroke-opacity: 0.55;
+}
+
+/* 邻接：成员 ↔ 成员，只是"有过往来"的暗示，退到背景 */
+.tring .mlink {
+  stroke: #26374f;
+  stroke-width: 0.8;
+  stroke-opacity: 0.35;
+  stroke-dasharray: none;      /* 不再用虚线 */
+}
+
+/* 执行中：最强，成员色 + 流动，不再是"实线叠虚线"两层 */
+.tring .mlink.is-running {
+  stroke-width: 1.8;
+  stroke-opacity: 0.85;
+  stroke-dasharray: 4 8;
+  animation: link-run 3.2s linear infinite;
+}
+
+.tring .mlink.is-hot {
+  stroke-width: 1.0;
+  stroke-opacity: 0.45;
+}
+
+/* 容器回到 500（规范工程师：活跃度必须留 ≥400 才可读） */
+body .zone-row,
+body.swap .zone-row {
+  grid-template-columns: 500px minmax(0, 1fr) 540px;
+}
+
+/* ── 连线按规范工程师的三档（内容 > 状态 > 结构）──────────────
+   他推翻了我之前照 UI设计师 做的"主干最粗"：
+   结构线是背景，最弱；往来中档；执行中最强且必须是绿色虚线。 */
+.tring .rline {
+  stroke: #2a3a52;
+  stroke-width: 1px;
+  stroke-opacity: 0.28;
+}
+
+.tring .mlink {
+  stroke: #3d526e;
+  stroke-width: 1.35;
+  stroke-opacity: 0.45;
+  stroke-dasharray: none;
+}
+
+/* 执行中：绿色虚线，且底下那条灰结构线要隐藏，不能叠两条 */
+.tring .mlink.is-running {
+  stroke: #3ddc97;
+  stroke-width: 1.5;
+  stroke-opacity: 0.85;
+  stroke-dasharray: 4 8;
+  animation: link-run 3.2s linear infinite;
+}
+
+.tring .mlink.is-hot {
+  stroke-width: 1.2;
+  stroke-opacity: 0.55;
+}
+
+/* ── 默认结构骨架（2026-11-05）────────────────────────────────
+   全连接：任意两个成员之间都有一条。45 条叠在同一块画布里，所以压到
+   0.13 透明度只做底纹；真实往来线（0.45）才代表"有数据支撑的关系"。 */
+.tring .mlink.is-structure {
+  stroke: #2b4059;
+  stroke-width: 0.8;
+  stroke-opacity: 0.2;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+/* 相邻那几档要撑住外圈轮廓，比跨弦明显一档 */
+.tring .mlink.is-structure.is-near {
+  stroke-width: 1;
+  stroke-opacity: 0.34;
+}
+
+/* ── 大管家干活：白点沿外圈跑（2026-11-05）──────────────────────
+   只在 working 时存在，属于任务绑定的循环；常驻动效预算不变。 */
+@keyframes hub-run {
+  to { transform: rotate(360deg); }
+}
+
+.rhub.is-working {
+  filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.16));
+}
+
+.rhub .rhub-runner {
+  animation: hub-run 3.2s linear infinite;
+}
+
+/* 页面不可见时暂停，跟其它循环一致 */
+html[data-doc-hidden] .rhub-runner {
+  animation-play-state: paused;
+}
+
+/* 减少动效：点不动，但用一段静态亮弧保住"在跑"的信息 */
+@media (prefers-reduced-motion: reduce) {
+  .rhub .rhub-runner { animation: none; }
+  .rhub .rhub-track { stroke-opacity: 0.85; stroke-width: 1.6; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   统一的一层网 + 全部连线跑流光（2026-11-05）
+   —— 原来三层亮度（结构近 0.34 / 结构远 0.2 / 往来 0.45），而往来数据
+      集中在右下，所以右下亮、左边空，看着像"亮度分布不均"。
+   —— 现在结构线统一一档，往来线只靠色相（偏青）和轻微加粗区分，不用亮度。
+   ══════════════════════════════════════════════════════════ */
+
+.tring .mlink.is-structure,
+.tring .mlink.is-structure.is-near,
+.tring .mlink.is-structure.is-far {
+  stroke: #33507a;
+  stroke-width: 0.9;
+  stroke-opacity: 0.26;
+}
+
+/* 真实往来：与结构线完全同色同亮（用户要求"全部一样亮"）——
+   往来信息不再靠亮度编码，只在干活时用流光表达"这条线上正在推进任务" */
+/* 注意这里要排除 .is-cross-active：`:not()` 会把 specificity 顶到 5 个类，
+   不加排除的话，下面那条"通信高亮"规则（4 个类）永远会被它压掉。 */
+.tring .mlink.is-data:not(.is-running):not(.is-hot):not(.is-cross-active) {
+  stroke: #33507a;
+  stroke-width: 0.9;
+  stroke-opacity: 0.26;
+}
+
+/* 流光：一小段光沿每条线跑；pathLength 归一化后长短弦速度一致 */
+@keyframes mesh-flow {
+  to { stroke-dashoffset: -334; }
+}
+
+.tring .mlink-flow {
+  stroke: rgba(150, 214, 255, 0.6);
+  stroke-width: 1.2;
+  stroke-dasharray: 15 319;
+  stroke-linecap: round;
+  animation: mesh-flow 7s linear infinite;
+  pointer-events: none;
+}
+
+html[data-doc-hidden] .tring .mlink-flow {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tring .mlink-flow {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-opacity: 0.12;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   流光只在"干活过程中"出现，并且必须顺着线的方向跑（2026-11-05 三次调整）
+   —— 上一版让 45 条线常驻流动，等于平时也在跑，信息价值被稀释：
+      流动应该只表示"这条线上正在推进任务"。
+   —— 路径 d 的方向是 中心→成员，dashoffset 递减即沿路径正向，
+      光顺着线的方向走；平时整张网是静的。
+   ══════════════════════════════════════════════════════════ */
+
+/* 执行中：实线亮起来，不再自己画虚线（流动交给上面的 mlink-flow 承担） */
+.tring .mlink.is-running {
+  stroke: #3ddc97;
+  stroke-width: 1.6;
+  stroke-opacity: 0.55;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+@keyframes link-flow-dir {
+  to { stroke-dashoffset: -336; }
+}
+
+/* 密集+快：dasharray 6/18 让一条线上同时跑十几个光点，1.4s 走完整条线。
+   pathLength 设为 336 = 24×14，正好整除 dash 周期，循环回绕时不会跳一下。 */
+/* 水流 = 连续绿线（.is-running）+ 上面滑过的亮块（这里）。
+   只用一个长亮段跑，线本身是连的，所以看着像水在流，而不是一条虚线。 */
+.tring .mlink-flow {
+  stroke: rgba(205, 255, 235, 0.95);
+  stroke-width: 2.4;
+  stroke-dasharray: 22 146;   /* 周期 168 = 336/2：一条线上两个亮块，稀一些 */
+  stroke-linecap: round;
+  animation: link-flow-dir 1.5s linear infinite;
+  pointer-events: none;
+}
+
+html[data-doc-hidden] .tring .mlink-flow {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tring .mlink-flow {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-opacity: 0.5;
+  }
+}
+
+
+/* ── 大管家干活：一段亮弧顺边框流（2026-11-05 四次调整）──────────
+   白点太硬、像跑马灯，跟这套深蓝的网不搭；改成一段圆弧滑过边框，
+   圆头端点 + 外发光，柔一些。 */
+@keyframes hub-arc-run {
+  to { stroke-dashoffset: -100; }
+}
+
+.rhub .rhub-arc {
+  animation: hub-arc-run 2.6s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.75));
+}
+
+html[data-doc-hidden] .rhub .rhub-arc {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rhub .rhub-arc {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-opacity: 0.45;
+  }
+}
+
+/* 成员节点干活：与大管家同一套弧光（2026-11-05）
+   —— 之前成员用"呼吸光环"、中心用弧光，两套语言不搭；
+      现在统一成一段亮弧顺边框流，只按序号错开出发时间。 */
+.rnode .rnode-arc {
+  animation: hub-arc-run 2.6s linear infinite;
+  filter: drop-shadow(0 0 2.5px rgba(255, 255, 255, 0.7));
+}
+
+html[data-doc-hidden] .rnode .rnode-arc {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rnode .rnode-arc {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-opacity: 0.45;
+  }
+}
+
+/* ── 干活时的"光扫过"（2026-11-05 五次调整）────────────────────
+   上一版是每个节点边框上一段白弧在转，多个节点同时转像一排机械齿轮。
+   现在改成：一圈光从边框向外扩散并淡出，两圈错开半拍——像光扫过去，
+   节点本身不动，视觉上更安静。 */
+@keyframes node-ping {
+  0%   { transform: scale(0.99); opacity: 0.26; }
+  45%  { opacity: 0.07; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+
+/* 中心那一圈扩散得小一些，别把整个画面都罩住 */
+@keyframes hub-ping {
+  0%   { transform: scale(1);    opacity: 0.22; }
+  45%  { opacity: 0.06; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+.rnode .rnode-ping,
+.rhub .rhub-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: node-ping 2.3s ease-out infinite;
+}
+
+/* 中心：更慢、扩散更小的一个波，跟成员节奏错开 */
+.rhub .rhub-ping {
+  animation: hub-ping 3s ease-out infinite;
+}
+
+html[data-doc-hidden] .rnode .rnode-ping,
+html[data-doc-hidden] .rhub .rhub-ping {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rnode .rnode-ping,
+  .rhub .rhub-ping {
+    animation: none;
+    opacity: 0.22;
+    transform: scale(1.18);
+  }
+}
+
+/* 交叉线的流光（成员 ↔ 成员，两端都在干活时才有）
+   —— 比中心那几条更细更淡：它表示"这两个人都在忙、彼此有交互"，
+      主任务流向仍然是中心那条绿线。 */
+.tring .mlink-flow.is-cross-flow {
+  stroke: rgba(150, 205, 245, 0.45);
+  stroke-width: 1.4;
+  stroke-dasharray: 16 152;   /* 2 个块，更稀 */
+}
+
+/* 两端都在干活的交叉线：底色点亮，几个人协作时能看出这一小撮 */
+.tring .mlink.is-structure.is-cross-active {
+  stroke: #4f9ad0;
+  stroke-width: 1.25;
+  stroke-opacity: 0.6;
+}
+
+/* 通信高亮：结构线和数据线都要有专属样式
+   —— 之前只写了 .is-structure.is-cross-active，导致"有往来的那对"被画成数据线后
+      点不亮，看着还是一条虚线。 */
+.tring .mlink.is-data.is-cross-active {
+  stroke: #4f9ad0;
+  stroke-width: 1.3;
+  stroke-opacity: 0.62;
+}
+
+/* ══════════════════════════════════════════════════════════
+   第一步排版修正（2026-11-05）
+   ① 活跃度与任务流转间距 8px → 16px：原来只隔 6px + 一条线，
+      两块会被读成一个模块的上下两段，「任务流转独立成块」在视觉上没成立。
+   ② 成员状态并入成员输出排行，改成紧凑一行小字，
+      不再用 32px 大数字独占一块（那是「谁在干活」第三次重复表达）。
+   ══════════════════════════════════════════════════════════ */
+
+.side-col {
+  gap: 16px;
+}
+
+/* 排行里的紧凑计数行：14px 数字 + 10px 标签，一行排开 */
+.zone-output .mstat {
+  flex: 0 0 auto;
+  display: block;
+  padding: 0 0 6px;
+}
+.zone-output .mstat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 14px;
+  flex: 0 0 auto;
+}
+.zone-output .mstat-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+.zone-output .mstat-cell .v {
+  font-size: 14px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.zone-output .mstat-cell .k {
+  font-size: 10px;
+  line-height: 12px;
+  color: #8a9cb5;
+}
+
+/* ══════════════════════════════════════════════════════════
+   任务流转移出左列（2026-11-05，用户选方案 A）
+   —— 左列 410px 装不下「拓扑 + ≥200px 曲线 + 3 条任务流转」，
+      把任务流转挪到右上，和日志流上下组合（两者都是消息流水）。
+   —— 左列只剩活跃度，曲线能撑满，绘图区从 168px 提到 350px 以上。
+   ══════════════════════════════════════════════════════════ */
+
+/* 左列：活跃度独占整列高度 */
+.side-col .zone-activity {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 右上：任务流转 + 日志流 */
+.right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+  order: 3;
+}
+
+.right-stack .zone-taskflow {
+  flex: 0 0 auto;
+  max-height: 196px;      /* 最多 3 条（每条 50px）+ 标题 */
+  min-height: 0;
+}
+
+.right-stack .zone-log {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 无任务时任务流转整块收起，空间全给日志流 */
+.right-stack.no-tasks .zone-taskflow {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   右栏轻合（2026-11-05）：「全队合计 / 成员排行 / 工具画像」合成一个「产出」模块
+   —— 三块同源于 bots[].stats，原来各带一个表头，等于把一份数据说了三遍。
+   —— 只合并容器与表头，渲染逻辑与 DOM id 全部不动，所以 JS 一行没改。
+   ══════════════════════════════════════════════════════════ */
+
+.zone-output {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 9px 12px 12px;
+  overflow: hidden;
+}
+
+.out-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+}
+
+/* 小节标题比总标题低一档：11px 半粗 + 右侧浅色说明 */
+.out-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #c9d6e8;
+  flex: 0 0 auto;
+}
+
+.out-sub span {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #8a9cb5;
+}
+
+/* 合计区在新容器里不再需要固定 132px 的身高 */
+.zone-output .totals {
+  flex: 0 0 auto;
+}
+
+.zone-output .stats,
+.zone-output .profile {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 「需要你处理」按内容收缩：原来 flex:1 会吃掉全部剩余空间，
+   只有一条告警时也占掉右栏大半，把下面「产出」压得很小。 */
+.stat-col .zone-alerts {
+  flex: 0 0 auto;
+  height: auto;          /* 旧规则里写死了 height: 200px，只覆盖 min-height 压不下来 */
+  min-height: 180px;     /* 只有一条告警时也保持一块正常模块的高度，不要缩成一条 */
+  max-height: 260px;
+}
+
+/* 告警列表也按内容收缩：原来 flex:1 在自动高度的父容器里仍会撑开，
+   一条告警也占 150px，把「产出」挤到下面。 */
+.stat-col .zone-alerts .alerts {
+  flex: 0 0 auto;
+  max-height: 190px;
+}
+
+/* 合计区在新容器里改成占满宽度：原来 flex:0 0 200px 是横向并排时的固定宽度，
+   竖排后会只剩 200px 把内部网格挤乱（2.2M / 26.3M / 1B 换行错位）。 */
+.zone-output .totals {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-right: 0;
+  border-right: 0;
+}
+
+/* 告警列表的底部渐隐遮罩要去掉：
+   它是给「内容溢出时提示还有更多」用的，但列表高度只有十几像素时
+   calc(100% - 12px) 会落在文字中间，把下半截字直接抹淡——看起来像"字被阴影吃掉一半"。 */
+.stat-col .zone-alerts .alerts {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   大模块标题统一（2026-11-05）
+   —— 原来四套混用：.zone-tag（绝对定位小标签 ①②）、.side-name（带竖条）、
+      .alerts-head（右栏）、思考区完全没有标题。
+   —— 现在 7 块全用同一套：12px/600/#c9d6e8 + 3×12 竖条 + 10px 副标 + 细分隔线。
+   —— 编号 ①② 删除：只有两个不构成顺序，CSS 里竖条的注释本来就写着「不编号」。
+   ══════════════════════════════════════════════════════════ */
+
+.zone > .side-head,
+.zone-mid > .side-head {
+  display: flex;
+  align-items: center;
+  padding: 4px 0 6px;
+  margin: 0 0 6px;
+  border-bottom: 1px solid rgba(46, 64, 90, 0.55);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.zone > .side-head .side-name,
+.zone-mid > .side-head .side-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #c9d6e8;
+}
+
+.zone > .side-head .side-name::before,
+.zone-mid > .side-head .side-name::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 1.5px;
+  background: #7aa7de;
+  flex: 0 0 auto;
+}
+
+.zone > .side-head .side-sub,
+.zone-mid > .side-head .side-sub {
+  margin-left: 8px;
+  font-size: 10px;
+  color: #7d8fa8;
+  letter-spacing: 0;
+}
+
+/* 竖条按模块语义取色：它是装饰件，不参与对比度判定，分色反而帮扫视定位 */
+.side-head[data-accent="topo"] .side-name::before { background: #a78bfa; }
+.side-head[data-accent="activity"] .side-name::before { background: #3ddc97; }
+.side-head[data-accent="task"] .side-name::before { background: #7aa7de; }
+.side-head[data-accent="log"] .side-name::before { background: #6ea8fe; }
+.side-head[data-accent="think"] .side-name::before { background: #22c55e; }
+.side-head[data-accent="alert"] .side-name::before { background: #ffb547; }
+.side-head[data-accent="neutral"] .side-name::before { background: #e6edf9; }
+
+/* 思考区：加标题行，但不套外层大卡片框（11 张卡已有自己的边框，再套就是框套框） */
+.zone-mid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+}
+
+.zone-mid > .thoughts {
+  position: absolute;
+  inset: 44px 10px 10px;
+  padding: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   统一各模块内边距（2026-11-05）
+   —— 原来每块的 padding 都不一样（拓扑 0 / 日志 20 / 活跃度 7-10-9 /
+      右栏 9-14-10 / 思考区 8-10-10），因为标题以前是绝对定位的标签，
+      各块自己留位置。标题进文档流后，这些差异直接把三个标题推到三个高度上。
+   —— 竖条被左边框切掉，也是因为拓扑那块 padding 为 0。
+   ══════════════════════════════════════════════════════════ */
+
+.zone-topo,
+.zone-log,
+.zone-activity,
+.zone-taskflow,
+.zone-mid,
+.zone-alerts,
+.zone-output {
+  /* 左边给到 14：3px 竖条 + 11px 呼吸，才不会被圆角和外框视觉上切掉 */
+  padding: 10px 12px 12px 14px;
+  box-sizing: border-box;
+}
+
+/* 带标题的容器改纵向 flex：标题固定高度，内容吃掉剩下的 */
+.zone-topo,
+.zone-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.zone-topo > .tring {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.zone-log > .log {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 日志区旧规则给绝对定位标签留了 20px，现在没标签了 */
+.zone-log {
+  padding-top: 10px;
+}
+
+/* 标题行右侧的附属信息位：三个模块都补上，才不会一个有一块、两个空着，
+   看起来像三套不同的标题。统一靠右、11px、与副标同色系。 */
+.side-head .side-tail,
+.zone-mid .side-head .side-tail {
+  margin-left: auto;
+  font-size: 11px;
+  color: #8a9cb5;
+  letter-spacing: 0;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* 小数点被裁成方块：.odo 用等宽字体，'.' 本身占 1ch 宽，
+   而 .odo-dot 只给了 0.5ch 的槽位 + overflow:hidden，字形被裁掉一半。
+   改成：槽位给满 1ch，再用负 margin 把视觉宽度收回 0.5ch，字形完整。 */
+.odo-dot {
+  width: 1ch;
+  margin: 0 -0.25ch;
+  overflow: visible;
+}
+
+/* 节点名字压在连线上：原来的描边是半透明 rgba(8,13,22,.85)，线会透过来。
+   改成不透明 + 加粗到 3.5px，等于在字周围挖出一圈背景色，任何线穿过去都看不见。 */
+.tring .rlabel {
+  stroke: #0c1017;
+  stroke-width: 3.5px;
+}
+
+/* 拓扑区不要标题：环形拓扑本身一眼可辨，标题只占掉 30px 高度。
+   顶部留 12px 给最上面的节点名字，别贴边。 */
+.zone-topo {
+  padding-top: 12px;
+}
+
+/* 卡片头部的模型 id 显示全称：字号 9px 等宽 + 允许收缩，
+   放不下时省略（完整值仍在 title 里），避免把「空闲/思考中」状态挤出卡片。 */
+.thought-head .role {
+  padding: 1px 5px;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 最长的那条 id（workbuddy-pool/cn:deepseek-v4.1-flash = 38 字符）在 9px 下会被省略，
+   缩到 8.5px + 收紧内边距，让它也能完整显示。 */
+.thought-head .role {
+  font-size: 8.5px;
+  padding: 1px 4px;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════
+   连线降噪（采纳 UI设计师 建议，2026-11-05）
+   —— 之前「绿线 + 纯白流块 + 亮青弧」三者互相抢注意力，
+      绿线表示有人在跑、白块表示在流动、青弧表示在通信，全都在发亮。
+   —— 现在：绿只表示「正在执行」，白块降成浅蓝灰，通信弧降一档，
+      底网略微提亮但降透明度——三者的亮度梯度拉开了。
+   ══════════════════════════════════════════════════════════ */
+
+/* 正在执行：绿降一档饱和度 */
+.tring .mlink.is-running {
+  stroke: #67c7a1;
+}
+
+/* 流动白块：纯白 → 浅蓝灰，透明度 .75，不再是最亮的东西 */
+.tring .mlink-flow {
+  stroke: rgba(198, 216, 232, 0.75);
+}
+
+/* 成员之间真实通信的弧：亮青 → 柔和青 */
+.tring .mlink.is-structure.is-cross-active,
+.tring .mlink.is-data.is-cross-active {
+  stroke: #80b8ce;
+  stroke-opacity: 0.55;
+}
+
+/* 底网：略提亮色值、略降透明度，作为背景纹理更柔 */
+.tring .mlink.is-structure,
+.tring .mlink.is-data:not(.is-running):not(.is-hot):not(.is-cross-active) {
+  stroke: #52667e;
+  stroke-opacity: 0.24;
+}
+
+/* 底网压回去：UI设计师 建议的 #52667e 比原色亮一档，
+   透明度只降 0.02 抵消不了，45 条线反而更抢。降到 .15 让它退回背景。 */
+.tring .mlink.is-structure,
+.tring .mlink.is-data:not(.is-running):not(.is-hot):not(.is-cross-active) {
+  /* 透明度由 JS 按成员数注入（--mesh-op）：人少线也少，给高一点才不显得空 */
+  stroke-opacity: var(--mesh-op, 0.16);
+}
+
+/* ══════════════════════════════════════════════════════════
+   卡片从空闲切到干活态时"卡一下"（2026-11-05）
+   —— 四个过渡时长各不相同（240/320/260/420ms），
+      而且边框是从灰色直接变 transparent（消失），中间有一瞬卡片没边框；
+      再叠一个 420ms 的整卡 scale，视觉上就是"卡一下"。
+   —— 现在：边框改成过渡到成员色（不是消失）、所有过渡统一 280ms、
+      scale 幅度收小到 0.996→1.004，肉眼几乎只剩"亮起来"。
+   ══════════════════════════════════════════════════════════ */
+
+.thought {
+  transition: border-color 280ms ease, box-shadow 280ms ease;
+  will-change: box-shadow;
+}
+
+.thought.is-working {
+  /* 渐变到成员色，而不是直接消失 */
+  border-color: color-mix(in srgb, var(--tone) 55%, #2a3a52);
+  animation: think-pop-soft 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.thought-ring {
+  transition: opacity 280ms ease;
+}
+
+@keyframes think-pop-soft {
+  0%   { transform: scale(0.996); }
+  55%  { transform: scale(1.004); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thought.is-working { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   卡片"呼吸"卡顿的根因（2026-11-05）
+   —— body.fx-inset 那条是 box-shadow 循环动画：3 层阴影、内发光从 22px 涨到 44px，
+      而 box-shadow 每帧都要 CPU 重绘，11 张卡同时跑直接掉帧。
+      这条规则的 specificity（body.fx-inset + .thought + .is-working）还盖住了
+      我新写的过渡，所以之前改的那个"整卡缩放"根本没生效。
+   —— 现在：停掉 box-shadow 循环，改成一个覆盖整卡的伪元素层，
+      只动画 opacity（走 GPU 合成层，不重绘阴影），观感还是呼吸，但不再卡。
+   ══════════════════════════════════════════════════════════ */
+
+body.fx-inset .thought.is-working {
+  animation: none;
+}
+
+body.fx-inset .thought.is-working::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  height: auto;
+  border-radius: inherit;
+  pointer-events: none;
+  /* 内描边 + 内发光都放这一层，靠透明度呼吸，不改几何尺寸 */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tone, #64748b) 60%, transparent),
+    inset 0 0 34px 12px color-mix(in srgb, var(--tone, #64748b) 40%, transparent);
+  background-image: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, var(--tone, #64748b) 70%, transparent) 50%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: top left;
+  animation: breathe-op 3.6s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes breathe-op {
+  0%, 100% { opacity: 0.42; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.fx-inset .thought.is-working::after { animation: none; opacity: 0.62; }
+}
+
+/* 告警的「忽略」叉号：默认隐形，悬停整条时出现在右侧，
+   点一下记进 localStorage 24 小时（不永久吞，真复发了还能看到）。 */
+.alert-mute {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #7d8fa8;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.alert:hover .alert-mute,
+.alert-mute:focus-visible {
+  opacity: 1;
+}
+
+.alert-mute:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #e6edf9;
+}
+
+.alert-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 日志流的群筛选下拉：放在标题行中间，和「N 条」同排 */
+.log-filter {
+  margin-left: 8px;
+  padding: 1px 4px;
+  font-size: 10px;
+  color: #8a9cb5;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(52, 72, 104, 0.9);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.log-filter:hover { color: #c9d6e8; border-color: rgba(90, 169, 255, 0.5); }
+
+/* 群消息在日志里的标签色：和派活/回执/思考区分开 */
+.log .kind.room { color: #c084fc; }
+
+/* 管理与调度：卡片头部的齿轮图标 + 略微突出的边框，和普通成员区分开 */
+.thought .admin-badge {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  color: #a78bfa;
+  opacity: 0.9;
+}
+
+.thought.is-admin {
+  border-color: rgba(167, 139, 250, 0.42);
+}
+
+.thought.is-admin.is-working {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.55),
+    0 0 14px -4px rgba(167, 139, 250, 0.5);
+}
+
+/* 管理员徽标：文字徽章，比一个齿轮图标辨识度高得多 */
+.thought .admin-badge {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  color: #dcd0ff;
+  background: rgba(167, 139, 250, 0.22);
+  border: 1px solid rgba(167, 139, 250, 0.55);
+  border-radius: 3px;
+}
+
+/* 拓扑中心「管理员」三个字加大：13px 在大圆里显得空 */
+.tring .rhub-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 左上角斜角标：ADMIN 斜着压在卡片的左上角，靠卡片的 overflow:hidden 裁出斜边。
+   比名字前的小徽章醒目得多，也符合"角标"的直觉。 */
+.thought .admin-ribbon {
+  position: absolute;
+  top: 15px;
+  left: -34px;
+  width: 118px;
+  padding: 3px 0;
+  text-align: center;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #7c5cf0, #a78bfa);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+/* 斜角标太靠内会压住名字：角标往角落里收，卡片头同时让出左边空间 */
+.thought .admin-ribbon {
+  top: 9px;
+  left: -42px;
+  width: 120px;
+  padding: 2px 0;
+  font-size: 9px;
+}
+
+.thought.is-admin .thought-head {
+  padding-left: 26px;
+}
+
+/* 成员排行 / 工具画像超出高度时要能滚，不能直接切掉最后一行。
+   滚动条隐藏（scrollbar-width:none + webkit 伪元素），但内容可以滚。 */
+.zone-output .out-sec {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 合计那块内容固定，不参与伸缩 */
+.zone-output .out-sec:first-of-type {
+  flex: 0 0 auto;
+}
+
+.zone-output .stats,
+.zone-output .profile {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* 底部 10px 渐隐：提示还有内容，同时不出现滚动条 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 10px), transparent 100%);
+}
+
+.zone-output .stats::-webkit-scrollbar,
+.zone-output .profile::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   设置入口（2026-11-05）
+   —— 原来是日志流标题栏里一个下拉，语义太窄。改成右侧中部一个齿轮按钮，
+      点开是从右边滑出的抽屉，以后加设置项都往抽屉里放。
+   ══════════════════════════════════════════════════════════ */
+
+.settings-btn {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  width: 30px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(52, 72, 104, 0.9);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: rgba(24, 33, 45, 0.92);
+  color: #8a9cb5;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.settings-btn:hover {
+  color: #c9d6e8;
+  background: rgba(36, 48, 66, 0.96);
+}
+
+.settings-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: #10161f;
+  border-left: 1px solid rgba(52, 72, 104, 0.9);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.45);
+  transform: translateX(100%);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.settings-drawer.is-open {
+  transform: none;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(46, 64, 90, 0.55);
+}
+
+.settings-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #c9d6e8;
+}
+
+.settings-close {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #8a9cb5;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.settings-close:hover { color: #e6edf9; }
+
+.settings-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.settings-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9d6e8;
+}
+
+.settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-opt {
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: #9aabc6;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.settings-opt:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #c9d6e8;
+}
+
+.settings-opt.is-active {
+  color: #cfe3ff;
+  background: rgba(122, 167, 222, 0.16);
+  border-color: rgba(122, 167, 222, 0.5);
+}
+
+.settings-hint {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #7d8fa8;
+}
+
+/* 设置入口要更显眼：原来 30×52 的暗色竖条贴在边上，几乎看不见。
+   放大、提亮、加蓝边和投影，让人一眼能找到。 */
+.settings-btn {
+  width: 40px;
+  height: 68px;
+  color: #cfe0f5;
+  background: rgba(35, 48, 66, 0.96);
+  border: 1px solid rgba(90, 169, 255, 0.5);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  box-shadow: -3px 0 14px rgba(0, 0, 0, 0.55), inset 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.settings-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.settings-btn:hover {
+  color: #ffffff;
+  background: rgba(90, 169, 255, 0.26);
+  border-color: rgba(122, 167, 222, 0.9);
+  box-shadow: -3px 0 18px rgba(90, 169, 255, 0.35);
+}
+
+/* 设置按钮固定在右边缘，会盖住右栏最右边的数字。
+   给 stat-col 让出同等宽度，内容就不会被压住。 */
+.stat-col {
+  padding-right: 46px;
+  box-sizing: border-box;
+}
+
+/* ══════════════════════════════════════════════════════════
+   右栏「产出」分区（2026-11-05，用户反馈：这块没分割，感觉太密集）
+   —— 原来三小节之间只靠 12px 空隙，没有边界，一屏看下去是一团。
+      按模块卡片体系给「产出」整块加框，内部小节用标题下的细分隔线切开，
+      再给排行/画像每行 +1px 高度、小节之间补 4px 呼吸。
+   ══════════════════════════════════════════════════════════ */
+
+/* 整块加外壳，与「需要你处理」形成两块的边界 */
+.stat-col .zone-output {
+  gap: 13px;
+  padding: 10px 12px 12px 14px;
+  border: 1px solid #1a2434;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(20, 27, 40, 0.55), rgba(14, 20, 30, 0.4));
+}
+
+/* 三个小节之间：细分隔线 + 上内边距，读到线就知道换了一节 */
+.stat-col .zone-output .out-sec + .out-sec {
+  padding-top: 11px;
+  border-top: 1px solid #1e2b40;
+}
+
+.stat-col .zone-output .out-sec {
+  gap: 7px;
+}
+
+/* 小节标题后带一条淡线，标题本身不再孤零零地贴在数字上 */
+.stat-col .zone-output .out-sub {
+  position: relative;
+  padding-bottom: 6px;
+  margin-bottom: 1px;
+}
+
+.stat-col .zone-output .out-sub::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(94, 129, 178, 0.32), rgba(94, 129, 178, 0.04));
+}
+
+/* 排行行放宽一点：18px → 21px，行与行不再贴着 */
+.stat-col .zone-output .bar-row {
+  height: 21px;
+  align-items: center;
+}
+
+.stat-col .zone-output .bar-name { font-size: 11px; }
+.stat-col .zone-output .bar-pct { font-size: 10px; }
+.stat-col .zone-output .bar-out { font-size: 11.5px; }
+.stat-col .zone-output .bar-track { height: 7px; }
+
+/* 成员状态那行（13 总数 / 0 运行 / 13 空闲）和下面的榜之间留白 */
+.stat-col .zone-output .mstat {
+  padding: 1px 0 8px;
+  margin-bottom: 2px;
+  border-bottom: 1px dashed rgba(94, 129, 178, 0.18);
+}
+
+/* 画像行也放宽，和排行节奏对齐 */
+.stat-col .zone-output .profile { gap: 3px; }
+.stat-col .zone-output .pf-row { min-height: 13px; }
+.stat-col .zone-output .pf-name { font-size: 10.5px; }
+.stat-col .zone-output .pf-total { font-size: 10.5px; }
+
+/* 图例与画像之间补一口气 */
+.stat-col .zone-output .pf-legend {
+  padding-bottom: 2px;
+  margin-bottom: 1px;
+  border-bottom: 1px dashed rgba(94, 129, 178, 0.14);
+}
+
+/* 分区后的高度配平：分区线吃掉了可用高度，两个列表都被切了行。
+   合计行本身高度固定，从「需要你处理」身上让出空间（上限 260 → 220），
+   排行榜行高 21 → 19，保证 13 行整行显示、不被切半行。 */
+.stat-col .zone-alerts {
+  max-height: 220px;
+  min-height: 150px;
+}
+
+.stat-col .zone-output .bar-row { height: 19px; }
+.stat-col .zone-output .bar-track { height: 6px; }
+.stat-col .zone-output .pf-row { min-height: 12px; }
+.stat-col .zone-output .out-sec { gap: 6px; }
+.stat-col .zone-output { gap: 11px; }
+.stat-col .zone-output .mstat { padding: 1px 0 6px; margin-bottom: 1px; }
+
+/* 「需要你处理」再收一点：只挂一条告警时 220 仍偏空，收到 186，
+   让下面两个列表都整行放下（13 行不再有半行被切）。 */
+.stat-col .zone-alerts {
+  max-height: 186px;
+  min-height: 140px;
+}
+.stat-col .zone-output { gap: 10px; }
+.stat-col .zone-output .out-sec { gap: 5px; }
+.stat-col .zone-output .out-sub { padding-bottom: 5px; }
+.stat-col .zone-output .bar-row { height: 18px; }
+.stat-col .zone-output .pf-row { min-height: 11.5px; }
+
+/* 最后一行留 8px 底边距，避免被底部渐隐遮罩压到、看起来像"被切掉"。 */
+.stat-col .zone-output .stats,
+.stat-col .zone-output .profile {
+  padding-bottom: 0;
+  overflow-y: hidden;   /* 分区后行高已排满，不再是可滚列表，别再叠一层滚动 */
+}
+
+/* 渐隐遮罩从 10px 收到 6px：10px 会压到最后一行的数字下沿，
+   看起来像数字被切。6px 只做一个轻微提示，不影响整行可读。 */
+.stat-col .zone-output .stats,
+.stat-col .zone-output .profile {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 6px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 6px), transparent 100%);
+}
+
+/* 第 13 行仍被遮住半行：合计区固定高 + 三节都保底，加起来超出可用高度。
+   把合计数字群的垂直留白收掉一点（30px 主数字后面的行距），
+   再把「需要你处理」上限压到 168，换来 20px 给两个列表整行显示。 */
+.stat-col .zone-alerts { max-height: 168px; min-height: 132px; }
+.stat-col .zone-output .totals { gap: 1px; }
+.stat-col .zone-output .tt-main b { font-size: 27px; }
+.stat-col .zone-output .out-sec:nth-of-type(2) { gap: 4px; }
+.stat-col .zone-output .bar-row { height: 17.5px; }
+.stat-col .zone-output .pf-row { min-height: 11px; }
+
+/* ══════════════════════════════════════════════════════════
+   管理员卡占两列（2026-11-05，用户要求）
+   —— 管理员的正文是调度结论，比成员的短句长；只占一格时会被挤成
+      又窄又高的一条，还会把整行网格顶高，让同排其它卡跟着拉长。
+      跨两列后正文有横向空间，排两行就够，其余卡也回到正常高度。
+   ══════════════════════════════════════════════════════════ */
+
+.thought.is-wide .thought-body,
+.thought.is-wide .think-text {
+  line-height: 1.55;
+}
+
+/* 跨两列的卡不需要把正文压到最小字号，给回正常可读的 11px */
+.thought.is-wide .think-text {
+  font-size: 11px;
+}
+
+/* 跨列卡正文：10px → 11.5px，行高 1.6。横着宽了就把字给回来，
+   否则跨两列反而更费眼（原来 10px 是全屏最小的字）。 */
+.thought.is-wide .thought-body {
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+/* ── 设置齿轮：40×68 → 32×52，图标 22 → 18，收掉过于厚重的边框与投影 ── */
+.settings-btn {
+  width: 32px;
+  height: 52px;
+  border-radius: 8px 0 0 8px;
+  background: rgba(26, 36, 50, 0.94);
+  border-color: rgba(90, 169, 255, 0.34);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.45);
+}
+
+.settings-btn svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.92;
+}
+
+/* 让位同步收到 38：按钮 32 + 6 间隙 */
+.stat-col {
+  padding-right: 38px;
+}
+
+/* ── 跨两列卡的正文：只给最小高度，不要限制最大高度 ──
+   2026-11-06 修：这里原来写了 max-height:62px + overflow:hidden，
+   等于把宽卡的正文硬切在 62px，一句话说到一半就断（用户截图里
+   大管家的正文被切成 "回执|R4|TASK=RC-2|BOT=大管家|"）。
+   现在只保证「至少这么高」，多出来的交给 .thought-body 的可滚动区域。 */
+.thought.is-wide .thought-body {
+  min-height: 60px;
+}
+
+/* think-text 不设最大高度：它是正文的实际内容，裁它等于裁内容。
+   滚动交给外层 .thought-body（overflow-y:auto）。 */
+.thought.is-wide .think-text {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: none;
+  overflow: visible;
+}
+
+/* ══════════════════════════════════════════════════════════
+   「产出」实心底（2026-11-05，用户反馈：网格线太明显，要加背景）
+   —— 原来底色是 rgba(20,27,40,0.55) 半透明，body::after 的网格线
+      直接透上来，在数字和大片留白处一格一格的非常显。
+      改成不透明深色卡面（叠一层微渐变提亮顶部），网格彻底挡住。
+   ══════════════════════════════════════════════════════════ */
+.stat-col .zone-output {
+  background:
+    linear-gradient(180deg, rgba(30, 41, 58, 0.55) 0%, rgba(18, 25, 36, 0) 42%),
+    #141b27;
+  border-color: #22304a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* 「需要你处理」同样给实心底：它现在是虚线框 + 半透明，网格线在告警行之间也露出来 */
+.stat-col .zone-alerts {
+  background:
+    linear-gradient(180deg, rgba(30, 41, 58, 0.5) 0%, rgba(18, 25, 36, 0) 46%),
+    #141b27;
+  border-color: #22304a;
+  border-style: solid;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* ══════════════════════════════════════════════════════════
+   思考区正文改为可滚动（2026-11-06，用户反馈：文字有的时候会被截断）
+   —— 原来是 overflow:hidden 硬切：实测「Neura群调度员」700 字里
+      可视 94px / 内容 441px，切掉 347px，约 5/6 直接看不见，
+      而且没有任何提示，看起来像"话说了一半就没了"。
+   —— 改成可滚 + 顶部淡入 + 底部渐隐，滚动条隐藏，
+      鼠标悬停时轻微提亮，暗示这块能滚。
+   ══════════════════════════════════════════════════════════ */
+.thought-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* 旧 Edge */
+  /* 上下各留一点渐隐：顶部提示"上面还有"，底部提示"下面还有"，
+     内容短到不需要滚时这两条遮罩落在留白上，看不出来。 */
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 9px, #000 calc(100% - 10px), transparent 100%);
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 9px, #000 calc(100% - 10px), transparent 100%);
+  transition: background 180ms ease;
+}
+
+.thought-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 悬停时微微提亮，告诉用户这里可以滚 */
+.thought:hover .thought-body {
+  background: rgba(9, 15, 24, 0.92);
+}
+
+/* ══════════════════════════════════════════════════════════
+   日志流独立群标（2026-11-06，用户反馈：选"全部"时看着像串台）
+   —— 全部视角本来就该显示所有群的消息，但原来群名塞在 32px 的类型列里
+      被压成一条，两个群的消息交替出现时分不清谁是谁，读起来像串台。
+      现在群名单独一列、带自己的颜色，扫一眼就知道这条属于哪个群。
+   ══════════════════════════════════════════════════════════ */
+.log li .roomtag {
+  flex: 0 0 auto;
+  max-width: 62px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 15px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+}
+
+/* Bot 作战指挥室：紫 */
+.log li .roomtag.roomtag-a {
+  color: #c9b3ff;
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.34);
+}
+
+/* Neura 研发群：青 */
+.log li .roomtag.roomtag-b {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.13);
+  border-color: rgba(56, 189, 248, 0.32);
+}
+
+/* 将来新增的群按哈希落到这几档 */
+.log li .roomtag.roomtag-x0 { color: #c084fc; background: rgba(192, 132, 252, 0.13); border-color: rgba(192, 132, 252, 0.3); }
+.log li .roomtag.roomtag-x1 { color: #38bdf8; background: rgba(56, 189, 248, 0.13); border-color: rgba(56, 189, 248, 0.3); }
+.log li .roomtag.roomtag-x2 { color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); }
+.log li .roomtag.roomtag-x3 { color: #34d399; background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.3); }
+.log li .roomtag.roomtag-x4 { color: #f472b6; background: rgba(244, 114, 182, 0.12); border-color: rgba(244, 114, 182, 0.3); }
+.log li .roomtag.roomtag-x5 { color: #a3e635; background: rgba(163, 230, 53, 0.12); border-color: rgba(163, 230, 53, 0.3); }
+
+/* 群消息整行左侧加一道细色条，密集滚动时也能快速分组 */
+.log li:has(.roomtag) .text {
+  color: #98a8bf;
+}
+
+/* ══════════════════════════════════════════════════════════
+   成员排行 / 工具画像：行高改成按可用高度均分（2026-11-06 再次修）
+   —— 上一版写死 bar-row 18px、pf-row 11.5px：13 行需要 234px / 270px，
+      可视只有 232px / 268px，每行差 2px，最后一行永远被切掉一半
+      （用户截图里"测试工程师"只剩上半截）。
+   —— 固定像素在行数变化时必然错位，改成 flex 均分：容器多高就分多高，
+      行数变多也只是每行变矮，永远不会出现"半行"。
+   ══════════════════════════════════════════════════════════ */
+.stat-col .zone-output .stats,
+.stat-col .zone-output .profile {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;          /* 行已均分填满，不需要滚动 */
+}
+
+.stat-col .zone-output .bar-row,
+.stat-col .zone-output .pf-row {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  align-items: center;
+}
+
+/* 进度条跟着行高走，但上下留一点余量，避免贴边 */
+.stat-col .zone-output .bar-track { height: 55%; min-height: 4px; max-height: 8px; }
+.stat-col .zone-output .pf-bar { height: 58%; min-height: 4px; max-height: 9px; }
+
+/* 行数变多时字号也不再被撑大，行高由容器决定，这里只保证不溢出 */
+.stat-col .zone-output .bar-row > *,
+.stat-col .zone-output .pf-row > * {
+  line-height: 1.25;
+}
+
+/* 上一步 flex 均分把行压到 13px，太挤。改成：每行给一个下限（17px），
+   放不下时列表内部可滚动——13 × 17 = 221px，正好落在这个区间的可用高度里。
+   行数继续增加就滚动，绝不会出现半行（滚动单位是整行）。 */
+.stat-col .zone-output .bar-row,
+.stat-col .zone-output .pf-row {
+  flex: 0 0 17px;
+  height: 17px;
+  min-height: 17px;
+}
+
+.stat-col .zone-output .stats,
+.stat-col .zone-output .profile {
+  overflow-y: auto;
+  /* 底部渐隐 6px：只在真有滚动时才会压到内容，17px 行放下最后一行还剩 0.5px */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 6px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 6px), transparent 100%);
+}
+
+/* 滚动条隐藏 */
+.stat-col .zone-output .stats::-webkit-scrollbar,
+.stat-col .zone-output .profile::-webkit-scrollbar {
+  width: 0; height: 0; display: none;
+}
+.stat-col .zone-output .stats,
+.stat-col .zone-output .profile {
+  scrollbar-width: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   节点被通信线点亮（2026-11-06，用户反馈：两个点之间线条亮的时候有一个点回不亮）
+   —— 原来线的 class 由 crossActive 决定（最近通信过 + 至少一端在跑），
+      而节点的亮只认 bot.working。两者口径不同，于是出现
+      「线上有光在跑，两端却都是灰点」，看着像漏亮了一个。
+   —— 现在 crossActive 的两端会被记进 ringTouchedIds，节点加 is-touched：
+      比干活态弱一档（不填充、不加光环），只把描边和名字提亮，
+      表示"它参与了这段通信"，不会和真正在干活的节点混淆。
+   ══════════════════════════════════════════════════════════ */
+.tring .rnode.is-touched circle {
+  fill-opacity: 0.26;
+  stroke-opacity: 0.92;
+}
+
+.tring .rnode.is-touched .rlabel {
+  fill: #dcb9ff;
+  font-weight: 600;
+}
+
+.tring .rnode.is-touched .rhint {
+  fill: #a89ec4;
+}
+
+/* ══════════════════════════════════════════════════════════
+   日志三列对齐（2026-11-06，用户反馈：全部视角下日志看着没对齐）
+   —— 上一版给群标单开了一列，于是群消息的行比普通行多一列，
+      正文起点右移一截，整块流水看着歪歪扭扭。
+   —— 改成严格三列：时间 62 / 类型 46 / 正文。群标放在类型列内，
+      不再新增列，所有行共用同一套网格，正文左边缘永远对齐。
+   ══════════════════════════════════════════════════════════ */
+.log li {
+  display: grid;
+  grid-template-columns: 62px 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.log li .time { flex: none; }
+.log li .kind { flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log li .text { flex: none; }
+
+/* 群消息的类型列里放的是群标，撑满这一列 */
+.log li .kind.kind-room {
+  overflow: visible;
+  display: flex;
+  align-items: center;
+}
+
+.log li .roomtag {
+  max-width: 46px;
+  padding: 0 4px;
+  font-size: 9.5px;
+  line-height: 14px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   舒展模式（2026-11-06，用户要求：紧凑 / 舒展可切换）
+   —— 紧凑模式（默认）：全部塞进一屏，卡片正文区只有 96px，长文本要靠内部滚动。
+   —— 舒展模式：放开 100vh 锁，页面整体滚动，卡片按内容自然撑高，
+      一屏大约 4~6 张卡，每张能读 10 行以上。
+   —— 只覆盖布局尺寸，不动渲染逻辑；拓扑/曲线是 SVG 画布，仍需固定高度。
+   ══════════════════════════════════════════════════════════ */
+
+body.density-comfort {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+  align-items: start;
+}
+
+/* 整页滚动：html/body 的 overflow:hidden 要放开 */
+html:has(body.density-comfort),
+body.density-comfort {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 左列按内容撑高，不再吃满一屏 */
+body.density-comfort .left-col {
+  min-height: 0;
+}
+
+/* 顶部拓扑区保持一个合理的固定高度（SVG 需要确定尺寸才能排环） */
+body.density-comfort .zone-row {
+  flex: 0 0 44vh;
+  min-height: 320px;
+}
+
+/* 思考区：从"填满剩余高度"改成"按内容撑开" */
+body.density-comfort .zone-mid {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+body.density-comfort .zone-mid > .thoughts {
+  position: static;
+  inset: auto;
+  padding: 4px 0 0;
+  grid-auto-rows: auto;
+  overflow: visible;
+}
+
+/* 卡片：给一个舒适的固定高度，正文有足够行数 */
+body.density-comfort .thoughts {
+  grid-auto-rows: minmax(210px, auto);
+}
+
+/* 正文不再内部滚动，跟着卡片自然展开 */
+body.density-comfort .thought-body {
+  overflow: visible;
+  max-height: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.density-comfort .thought.is-wide .thought-body {
+  min-height: 120px;
+}
+
+/* 右栏：从固定像素改成按内容撑开 */
+body.density-comfort .stat-col {
+  min-height: 0;
+}
+
+body.density-comfort .stat-col .zone-alerts {
+  max-height: none;
+  min-height: 120px;
+}
+
+body.density-comfort .stat-col .zone-output {
+  flex: 0 0 auto;
+}
+
+/* 排行 / 画像：行高回到自然值，13 行完整铺开，内部不滚 */
+body.density-comfort .stat-col .zone-output .bar-row,
+body.density-comfort .stat-col .zone-output .pf-row {
+  flex: 0 0 22px;
+  height: 22px;
+  min-height: 22px;
+}
+
+body.density-comfort .stat-col .zone-output .stats,
+body.density-comfort .stat-col .zone-output .profile {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   舒展模式：顶部与右栏一起放开（2026-11-06 第二轮，用户要求）
+   —— 上一版只放开了思考区，顶部统计还锁在 38vh、右栏各块还锁着固定 px，
+      结果整页变长了但右边和顶部还是原来的挤法，比例不协调。
+   —— 这里把右栏四个模块和顶部三块都改成按内容撑高。
+   ══════════════════════════════════════════════════════════ */
+
+/* 顶部三块（活跃度 / 任务流+日志 / 拓扑）：38vh → 更高，让图和拓扑都喘口气 */
+body.density-comfort .zone-row {
+  flex: 0 0 52vh;
+  min-height: 420px;
+  max-height: 720px;
+}
+
+/* ── 右栏：从"填满一屏"改成"按内容撑开" ── */
+body.density-comfort {
+  --comfort-card-gap: 12px;
+}
+
+body.density-comfort .stat-col {
+  gap: var(--comfort-card-gap);
+}
+
+/* 告警块：不再压到 168px 上限，给足高度，内容多了自然变高 */
+body.density-comfort .stat-col .zone-alerts {
+  flex: 0 0 auto;
+  min-height: 140px;
+  max-height: none;
+}
+
+body.density-comfort .stat-col .zone-alerts .alerts {
+  max-height: none;
+}
+
+/* 产出模块（合计 / 排行 / 画像）：按内容撑开，三节之间留足呼吸 */
+body.density-comfort .stat-col .zone-output {
+  flex: 0 0 auto;
+  gap: 16px;
+  padding: 14px 14px 16px;
+}
+
+body.density-comfort .stat-col .zone-output .out-sec {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+body.density-comfort .stat-col .zone-output .out-sec + .out-sec {
+  padding-top: 14px;
+}
+
+/* 合计区：大字和四宫格都放大一档 */
+body.density-comfort .stat-col .zone-output .tt-main b,
+body.density-comfort .stat-col .zone-output .tt-main .odo-xl {
+  font-size: 34px;
+}
+
+body.density-comfort .stat-col .zone-output .totals {
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+body.density-comfort .stat-col .zone-output .tt-grid {
+  gap: 10px 12px;
+}
+
+/* 排行 / 画像行高：22 → 26px，名字与数值字号一起提一档 */
+body.density-comfort .stat-col .zone-output .bar-row,
+body.density-comfort .stat-col .zone-output .pf-row {
+  flex: 0 0 26px;
+  height: 26px;
+  min-height: 26px;
+}
+
+body.density-comfort .stat-col .zone-output .bar-name {
+  font-size: 12px;
+  flex: 0 0 96px;
+}
+
+body.density-comfort .stat-col .zone-output .bar-out,
+body.density-comfort .stat-col .zone-output .bar-pct {
+  font-size: 11.5px;
+}
+
+body.density-comfort .stat-col .zone-output .pf-name,
+body.density-comfort .stat-col .zone-output .pf-total {
+  font-size: 11.5px;
+}
+
+body.density-comfort .stat-col .zone-output .bar-track { height: 8px; }
+body.density-comfort .stat-col .zone-output .pf-bar { height: 9px; }
+
+/* 成员状态那行也放大 */
+body.density-comfort .zone-output .mstat-cell .v { font-size: 16px; }
+body.density-comfort .zone-output .mstat-cell .k { font-size: 11px; }
+
+/* ══════════════════════════════════════════════════════════
+   卡片半透明，让底图透上来（2026-11-06，用户选方案 A 试看）
+   —— 原来 .zone 是 rgba(18,25,35,0.72)、思考卡是实心 #18212d，
+      整页几乎被卡片铺满，底图只在 8px 缝隙里露一条边，怎么调亮都看不见。
+   —— 这里把外框和思考卡都降成半透明，底图从卡片内部透出来；
+      正文区保持深色实底（.thought-body 有 rgba(5,9,15,0.88)），
+      所以 10~12px 小字仍然压在最深的那一层的上，可读性不受影响。
+   ══════════════════════════════════════════════════════════ */
+
+/* 外框：0.72 → 0.46，底图的光晕能从模块内部透上来 */
+.zone {
+  background: rgba(18, 25, 35, 0.72);   /* 恢复成原始不透明度：没有底图可透了 */
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+/* 思考卡：实心 → 半透明。正文块自己还是深色实底，阅读区不变 */
+.thought {
+  background: #18212d;
+}
+
+/* 右栏「产出」「需要你处理」：实心 → 半透明 */
+.stat-col .zone-output,
+.stat-col .zone-alerts {
+  background:
+    linear-gradient(180deg, rgba(30, 41, 58, 0.35) 0%, rgba(18, 25, 36, 0) 42%),
+    rgba(17, 24, 35, 0.92);
+}
+
+/* 正文区：0.9 → 0.52。
+   原来这块是 90% 不透明的深黑，而它占了思考卡的最大面积——
+   底图透到卡片边缘就断了，中间永远是黑的（用户反复说"看不出效果"就是这个原因）。
+   降到 0.52 后底图能透上来，同时叠了下方 .think-text 的文字阴影保证可读。 */
+.thought-body {
+  background: rgba(5, 9, 15, 0.52);
+}
+
+/* 文字加一点点阴影，压在浅一档的背景上仍然清楚 */
+.think-text {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* ══════════════════════════════════════════════════════════
+   舒展模式卡片高度固定（2026-11-06 修）
+   —— 上一版给的是 grid-auto-rows: minmax(210px, auto) + 正文 overflow:visible，
+      等于"内容多长卡片就多高"。管理员卡里一段长文本就把整行拉高，
+      视觉上像框框一直往下长（用户反馈"一直在往下跑"）。
+   —— 改成固定行高：卡片高度由网格决定，正文超出时在卡片内部滚动。
+      这样舒展模式只是"卡片更大、每屏更少"，不会随内容无限变高。
+   ══════════════════════════════════════════════════════════ */
+body.density-comfort .thoughts {
+  grid-auto-rows: 300px;          /* 固定行高，不随内容变化 */
+  align-items: stretch;
+}
+
+body.density-comfort .thought {
+  height: 300px;                   /* 网格行高 + 卡片自身高度都锁死 */
+  min-height: 0;
+  max-height: 300px;
+}
+
+/* 正文回到可滚动：固定高度里放不下就内部滚，不再把卡撑破 */
+body.density-comfort .thought-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: none;
+  min-height: 0;
+  scrollbar-width: none;
+}
+
+body.density-comfort .thought-body::-webkit-scrollbar {
+  width: 0; height: 0; display: none;
+}
+
+body.density-comfort .thought.is-wide .thought-body {
+  min-height: 0;
+}
+
+/* 跨两列的管理员卡：高度同样锁死，不因为它正文长就把整行顶起来 */
+body.density-comfort .thought.is-wide {
+  height: 300px;
+  max-height: 300px;
+}
+
+/* 舒展模式下列数仍要算对：fitThoughtGrid 用 thoughts.clientHeight 判断
+   每行高度是否够，而舒展模式下这块是 auto 高度，量出来是整页高度，
+   于是它以为"空间富余"，把列数压到最少。这里把可用高度按固定行高估：
+   让判定走"固定 300px 行高 + 每行卡片数与屏幕宽度匹配"这条分支。 */
+body.density-comfort .thoughts {
+  /* 让 clientHeight 有意义：给出一个相当于 3 行卡片的高度 */
+  min-height: 940px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   舒展模式：拓扑图放大（2026-11-06）
+   —— .zone-topo 被写死 flex: 0 0 168px，舒展模式下顶栏整体加高了，
+      但拓扑这块还是 168px，环形图被压在一条窄带里，节点挤成一团。
+      这里按舒展比例把它放开，环半径由 drawRing 按容器尺寸重算。
+   ══════════════════════════════════════════════════════════ */
+/* .zone-topo 在 .zone-row（grid，三列等分高度）里，不是 flex 子项，
+   所以要靠 grid 的拉伸来放大——把 zone-row 行高提上去，它会自动填满。 */
+body.density-comfort .zone-row {
+  align-items: stretch;
+}
+
+body.density-comfort .zone-topo {
+  height: 100%;
+  min-height: 420px;
+}
+
+body.density-comfort .zone-topo > .tring {
+  position: absolute;
+  inset: 0;
+}
+
+/* 节点与名字一起放大：环大了，字号不跟上会显得空 */
+body.density-comfort .tring .rlabel {
+  font-size: 13px;
+}
+
+body.density-comfort .tring .rhint {
+  font-size: 10.5px;
+}
+
+/* 中心「管理员」那三个字也放大 */
+body.density-comfort .tring .rhub-label {
+  font-size: 15px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   干活节点：中心呼吸小点（2026-11-06，用户建议）
+   —— 原来节点干活时只有一圈向外扩散的白波纹，中心是空的。
+      加一个白色实心小点做明暗呼吸，节奏和外圈波纹同频（2.6s），
+      读起来像"心脏在跳"，一眼能看出这个节点在运转。
+   —— 只做透明度 + 半径的轻微变化，不放大光晕，避免和旁边节点抢视线。
+   ══════════════════════════════════════════════════════════ */
+@keyframes rnode-core-breathe {
+  0%, 100% {
+    opacity: 0.35;
+    r: 3.2;
+  }
+  45% {
+    opacity: 1;
+    r: 4.8;
+  }
+  70% {
+    opacity: 0.85;
+    r: 4.4;
+  }
+}
+
+/* 注意：SVG 里改 r 要用 CSS 的 r 属性，Chrome/Safari 都支持；
+   不支持的环境下退化成只呼吸透明度，也不会出错。 */
+.tring .rnode .rnode-core {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rnode-core-breathe 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+  pointer-events: none;
+}
+
+/* 页面不可见时暂停，省一点 CPU */
+html[data-doc-hidden] .tring .rnode .rnode-core {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tring .rnode .rnode-core {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   成员思考标题栏「谁在干活」色段带（2026-11-06 第三版）
+   —— 一条短光带，按在跑的人数分段，每段用该成员的成员色；
+      白色流光**只有一道**，横穿整条带子（不是每段各跑一道）。
+   —— 长度固定 108px 靠右，不再撑满标题栏。
+   ══════════════════════════════════════════════════════════ */
+.think-lights {
+  margin-left: auto;            /* 靠右 */
+  flex: 0 0 auto;
+  width: 108px;
+  height: 4px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(90, 130, 180, 0.10);   /* 底槽：全闲时也有一条极淡的轨道 */
+}
+
+/* 一段 = 一个正在干活的成员，颜色由 JS 写到 --seg-tone */
+.think-lights .seg {
+  flex: 1 1 0;
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--seg-tone, #5aa9ff);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--seg-tone, #5aa9ff) 65%, transparent);
+  animation: seg-pulse 1.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: var(--seg-delay, 0s);
+}
+
+/* 白色流光：整条带子只有一道，挂在容器上而不是每段上，
+   所以它横穿所有色段，读起来是一条信号在整根带子上跑。 */
+.think-lights::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.0) 35%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.0) 65%,
+    transparent 100%);
+  background-size: 56px 100%;
+  background-repeat: no-repeat;
+  animation: band-sweep 1.2s linear infinite;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+/* 有人在跑时才让白光出现 */
+.think-lights.is-live::after { opacity: 1; }
+.think-lights:not(.is-live)::after { animation: none; }
+
+@keyframes seg-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@keyframes band-sweep {
+  from { background-position: -56px 0; }
+  to   { background-position: calc(100% + 56px) 0; }
+}
+
+html[data-doc-hidden] .think-lights .seg,
+html[data-doc-hidden] .think-lights::after {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .think-lights .seg,
+  .think-lights::after { animation: none; }
+  .think-lights .seg { opacity: 0.9; }
+  .think-lights::after { opacity: 0; }
+}
