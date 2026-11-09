@@ -1023,8 +1023,19 @@ export function apply(ctx) {
   // 覆盖了这三个路径。多注册 exact 不会让请求更快，只会让它们变成永远不会
   // 单独生效的死配置——将来有人改了 handle 里的分派却忘了同步 exact，
   // 就会出现「改了却不生效」而且不报错。一条路由，一处真相。
-  ctx.effect(
-    () => ctx.webServer.register({ kind: 'prefix', path: MOUNT, handler: handle }),
-    `dsbot-monitoring: ${MOUNT}`
-  );
+  ctx.effect(() => {
+    try {
+      return ctx.webServer.register({ kind: 'prefix', path: MOUNT, handler: handle });
+    } catch (err) {
+      // HMR 重载时会出现：旧的 /bot-stage 路由还没释放，新的又来注册同一条，
+      // webServer 的契约是「重复 (kind, path) 直接抛错」，于是整个插件加载失败。
+      // 这里把它降级成 warn：旧路由仍在服务旧代码，功能可用，不至于让插件挂掉。
+      // 全新进程启动不会有这个问题，只有热重载路径会走到。
+      if (/duplicate/i.test(String(err?.message ?? ''))) {
+        ctx.logger?.warn?.(`[dsbot-monitoring] 路由 ${MOUNT} 已存在，跳过重复注册（HMR 重载）`);
+        return () => {};
+      }
+      throw err;
+    }
+  }, `dsbot-monitoring: ${MOUNT}`);
 }
