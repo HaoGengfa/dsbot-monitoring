@@ -5284,3 +5284,132 @@ html[data-doc-hidden] .think-lights::after {
   .think-lights .seg { opacity: 0.9; }
   .think-lights::after { opacity: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   窄容器适配（2026-11-09）
+   ─────────────────────────────────────────────────────────────────────
+   这个看板原本是给 1920×1080 独立浏览器窗口设计的：三列 + 右侧栏，
+   每张卡都按大屏尺寸调过。现在它以内嵌面板的形式出现在 dsh 里，
+   可视宽度只有 1100px 左右，硬套大屏网格的结果就是每列都被压成缝。
+
+   处理办法：按容器宽度分档，窄了就纵向堆叠，而不是继续等比压缩——
+   压缩到 1100/1920 ≈ 0.57 时字会小到读不了，堆叠至少每块都完整可读。
+
+   选择器带 body 前缀并用 !important：主题层的
+   `body.density-comfort .zone-row` 特异性比裸 `.zone-row` 高，
+   上一版就是因为被它压住而完全没生效。
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 中宽：拓扑与活跃度并排一行，日志流和任务流转各占一整行 */
+@media (max-width: 1560px) {
+  body .zone-row {
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr) !important;
+    align-items: stretch;
+  }
+  body .right-stack {
+    grid-column: 1 / -1 !important;
+  }
+  body .side-col {
+    min-width: 0 !important;
+  }
+  body .zone-activity {
+    min-height: 190px;
+  }
+}
+
+/* 窄：全部单列纵向堆叠，每块通栏，曲线得以完整展开 */
+@media (max-width: 1300px) {
+  body .zone-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    flex: 0 0 auto !important;
+  }
+  body .zone-topo {
+    min-height: 420px;
+  }
+  body .side-col,
+  body .right-stack {
+    grid-column: auto !important;
+    min-width: 0 !important;
+  }
+  body .zone-activity {
+    min-height: 210px;
+  }
+  body .zone-log {
+    min-height: 320px;
+  }
+  /* 内嵌时两侧留白收一点，把宽度让给内容 */
+  body .left-col {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+
+/* ── 窄容器：整个页面改成纵向单列 ───────────────────────────────────
+   外层 body 是「左列 + 右侧栏(约 400px)」的两列结构。面板只有
+   1100~1300px 时，右栏固定吃掉 400px，左列再被内部三列网格切分，
+   每块都瘦到读不了。所以窄屏时把 body 也拆成一列，让每个模块通栏。
+   断点取 1300：dsh 主面板常见宽度都在这个区间以下。 */
+@media (max-width: 1300px) {
+  body {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-rows: none !important;
+    grid-template-columns: none !important;
+    gap: 8px;
+  }
+  body .left-col,
+  body .stat-col {
+    grid-column: auto !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+  /* 各块给一个下限高度，否则 flex 会把它们压扁 */
+  body .zone-row { flex: 0 0 auto !important; }
+  body .zone-topo { min-height: 400px; }
+  body .zone-activity { min-height: 200px; }
+  body .zone-taskflow { min-height: 150px; }
+  body .zone-log { min-height: 300px; }
+  body .zone-mid { min-height: 520px; }
+  body .zone-alerts { min-height: 150px; }
+  body .zone-output { min-height: 460px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   滚动条：换成深色细条，跟主题走（2026-11-09）
+   —— 系统默认的覆盖式滚动条在深色底上是一道亮白，很跳。
+   —— 用 ::-webkit-scrollbar 系（dsh 桌面端是 Chromium 内核，支持）。
+      注意别同时写 scrollbar-width：Chromium 121+ 一旦看到标准属性
+      就会忽略 webkit 伪元素，圆角和 border 偏移就都没了。
+   ══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  /* 内缩 2px + 圆角，看起来像一根细条而不是把轨道填满 */
+  background: rgba(122, 167, 222, 0.22);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 167, 222, 0.42);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(122, 167, 222, 0.55);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
