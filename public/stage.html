@@ -5,6 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Bot 团队作战室</title>
   <link rel="stylesheet" href="./stage.css" />
+  <style>
+    /* 视图切换：与网络视图 / 拓扑看板 / 复盘回放同源；fixed 定位，不参与 stage 网格 */
+    .view-switch {
+      position: fixed; right: 14px; bottom: 14px; z-index: 50;
+      display: flex; align-items: center; gap: 2px;
+      padding: 3px; border-radius: 8px;
+      background: rgba(10, 18, 30, 0.92);
+      border: 1px solid rgba(90, 169, 255, 0.34);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      font-size: 12px; letter-spacing: 0.04em;
+    }
+    .view-switch a, .view-switch span {
+      padding: 4px 10px; border-radius: 5px; text-decoration: none;
+      color: #8fb6cf; white-space: nowrap;
+    }
+    .view-switch a:hover { color: #e8fbff; background: rgba(60, 140, 220, 0.24); }
+    .view-switch span.on { color: #eafcff; background: rgba(60, 140, 220, 0.34); }
+  </style>
 </head>
 <body>
   <div class="left-col">
@@ -109,5 +128,11 @@
   </aside>
 
   <script type="module" src="./stage.js"></script>
+  <nav class="view-switch" aria-label="视图切换">
+    <a href="./neural.html">网络视图</a>
+    <span class="on">作战室</span>
+    <a href="./index.html">拓扑看板</a>
+    <a href="./replay.html">复盘回放</a>
+  </nav>
 </body>
 </html>
