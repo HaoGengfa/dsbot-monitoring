@@ -1418,7 +1418,7 @@ function drawStatus(bots, pending) {
   ).join('');
 
   box.innerHTML = '<div class="chart-wrap">' +
-    donutChart(segs, { size: 92, stroke: 12, center: String(bots.length), caption: '成员' }) +
+    donutChart(segs, { size: 76, stroke: 11, center: String(bots.length), caption: '成员' }) +
     `<div class="dlegend">${legendRows}` +
       `<div class="st-kv"><span>平均轮次</span><b>${Math.round(totalTurns / Math.max(1, bots.length))}</b></div>` +
       `<div class="st-kv"><span>人均输出</span><b>${fmt(Math.round(bots.reduce((s, b) => s + (b.outTokens || 0), 0) / Math.max(1, bots.length)))}</b></div>` +
@@ -1479,12 +1479,12 @@ function drawRooms(rooms, bots, pending, roomEvents) {
     return `<div class="dl-row" title="${escapeHtml(tip)}">` +
       `<i style="background:${PAL[i % PAL.length]}"></i>` +
       `<span class="dl-name">${escapeHtml(r.name)}</span>` +
-      `<span class="dl-val">${r.count}人 · ${r.working}忙 · <b>${r.msgs}</b>条</span>` +
+      `<span class="dl-val">${r.count}人 · <b>${r.msgs}</b>条</span>` +
       `<span class="dl-pct">${((r.out / Math.max(1, totalOut)) * 100).toFixed(0)}%</span></div>`;
   }).join('');
 
   box.innerHTML = '<div class="chart-wrap">' +
-    donutChart(segs, { size: 104, stroke: 13, center: fmt(totalOut), caption: '群产出' }) +
+    donutChart(segs, { size: 92, stroke: 12, center: fmt(totalOut), caption: '群产出' }) +
     `<div class="dlegend">${legendRows}` +
       `<div class="st-kv"><span>群消息合计</span><b>${totalMsgs} 条</b></div>` +
     `</div></div>`;

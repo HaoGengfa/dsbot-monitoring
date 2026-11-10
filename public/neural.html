@@ -399,7 +399,10 @@
     .p-radar { overflow: hidden; }
     .radar-top { flex: 0 0 auto; display: flex; gap: 14px; padding: 0 14px; margin-bottom: 12px; font-size: 11px; line-height: 14px; color: #8fb0c4; white-space: nowrap; overflow: hidden; }
     .radar-top b { color: #e8f7ff; }
-    .col-left > .p-line { flex: 1 1 0; }
+    /* 回执时延：分布条 26 + 图例两行 33 + 指标 64 + 内边距，需要约 112px；
+       原来让它 flex:1 抢剩余高度，实测只有 90px，图例被切 14px */
+    .col-left > .p-line { flex: 0 0 auto; min-height: 112px; }
+    .col-left > .p-bars { flex: 1 1 auto; }
     .mid-top { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: minmax(0, 44fr) minmax(0, 28fr) minmax(0, 28fr); gap: 8px; min-height: 0; }
     .p-num { grid-column: 3; grid-row: 3; }
     .p-holo { grid-column: 1 / 3; grid-row: 3; background: linear-gradient(180deg, rgba(4, 16, 34, .78), rgba(2, 8, 18, .86)); backdrop-filter: blur(4px); }
@@ -830,8 +833,13 @@
     .dl-row { display: grid; grid-template-columns: 8px var(--dln, 92px) auto var(--dlp, 32px); gap: 8px; align-items: center; }
     .dl-name { min-width: 0; }
     .p-num .chart-wrap { --dlw: 220px; --dln: 104px; }
-    .p-status .chart-wrap { --dlw: 186px; --dln: 64px; --dlp: 30px; }
-    .p-rooms .chart-wrap { --dlw: 196px; --dln: 88px; }
+    /* 状态与效率面板实测只有 247px 可用宽：环形图 + 图例必须收进来，
+       原来 92+12+186=290 超出 21px，右侧 KPI 数值被切 */
+    .p-status .chart-wrap { --dlw: 150px; --dln: 56px; --dlp: 26px; gap: 10px; }
+    .p-status .st-kv { font-size: 10px; }
+    .p-status .st-kv b { font-size: 11px; }
+    /* 群维度：图例里「7人 · 0忙 · 58条」太长会把面板撑宽，收短为「7人 · 58条」 */
+    .p-rooms .chart-wrap { --dlw: 214px; --dln: 74px; --dlp: 30px; gap: 10px; }
     .p-alerts .chart-wrap { --dlw: 190px; --dln: 80px; --dlp: 30px; }
     /* 状态与效率：图例与 KPI 之间加分隔，环只对齐图例组 */
     .p-status .dlegend { gap: 3px; }
@@ -920,8 +928,6 @@
         <div class="tabs">
           <span class="on">网络视图</span>
           <a class="tab-link" href="./stage.html">作战室</a>
-          <a class="tab-link" href="./replay.html">复盘回放</a>
-          <a class="tab-link" href="./index.html">拓扑看板</a>
         </div>
         <span id="focus-pill" class="focus-pill" hidden></span>
         <div class="top-right">
